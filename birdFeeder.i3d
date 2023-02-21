@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<i3D name="liquidFlatBottomTank1630" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+  <Asset>
+    <Export program="GIANTS Editor 64bit" version="9.0.3"/>
+  </Asset>
+
+  <Files>
+    <File fileId="1" filename="Textures/birdFeeder_mat_diffuse.dds"/>
+    <File fileId="2" filename="Textures/birdFeeder_mat_normal.dds"/>
+    <File fileId="3" filename="Textures/birdFeeder_mat_specular.dds"/>
+  </Files>
+
+
+  <Materials>
+    <Material name="birdFeeder_mat" materialId="23">
+      <Texture fileId="1"/>
+      <Normalmap fileId="2"/>
+      <Glossmap fileId="3"/>
+    </Material>
+    <Material name="UnnamedMaterial" materialId="24" diffuseColor="1 0.6 1 1">
+    </Material>
+    <Material name="UnnamedMaterial" materialId="25" diffuseColor="1 1 1 1">
+    </Material>
+  </Materials>
+
+
+  <Shapes externalShapesFile="birdFeeder.i3d.shapes">
+  </Shapes>
+
+
+  <Dynamics>
+  </Dynamics>
+
+  <Scene>
+      <TransformGroup name="birdFeeder" clipDistance="500" nodeId="30">
+        <TransformGroup name="birdFeeder_vis" nodeId="31" lodDistance="0 70">
+          <TransformGroup name="LOD0" nodeId="32">
+            <Shape shapeId="1" name="birdFeeder_vis" static="true" nodeId="33" materialIds="23" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
+          </TransformGroup>
+          <TransformGroup name="LOD1" nodeId="34"/>
+        </TransformGroup>
+        <TransformGroup name="misc" nodeId="35">
+          <TransformGroup name="storage" nodeId="36"/>
+          <TransformGroup name="mapPosition" scale="0.999988 0.999988 0.999988" nodeId="37"/>
+          <TransformGroup name="unloadingStation" nodeId="38">
+            <Shape shapeId="2" name="unloadingTrigger" translation="0 2.76774 0" scale="1.5 1 1.5" static="true" trigger="true" collisionMask="1082130432" clipDistance="100" nodeId="39" materialIds="25" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+          </TransformGroup>
+          <Shape shapeId="2" name="infotrigger" translation="0 1.417 0" scale="3.74698 3.023 3.33361" static="true" trigger="true" collisionMask="1048576" clipDistance="100" nodeId="40" materialIds="25" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+          <TransformGroup name="teleportPosition" translation="0.814017 0 0.481114" nodeId="41"/>
+          <Shape shapeId="3" name="fillPlane" translation="0 1.8238 0" scale="0.373064 0.373064 0.373064" nodeId="42" materialIds="24" distanceBlending="false"/>
+        </TransformGroup>
+        <TransformGroup name="clearAreas" nodeId="43">
+          <TransformGroup name="clearArea1Start" translation="-0.336547 0 -0.348749" nodeId="44">
+            <TransformGroup name="clearArea1Width" translation="3.64539e-05 0 0.988847" nodeId="45"/>
+            <TransformGroup name="clearArea1Height" translation="0.953035 0 4.27541e-07" nodeId="46"/>
+          </TransformGroup>
+        </TransformGroup>
+        <TransformGroup name="testAreas" nodeId="47">
+          <TransformGroup name="testArea1Start" translation="-0.3 0 -0.3" nodeId="48">
+            <TransformGroup name="testArea1End" translation="0.559023 0 0.555811" nodeId="49"/>
+          </TransformGroup>
+        </TransformGroup>
+        <TransformGroup name="tipOcclusionUpdateAreas" nodeId="50">
+          <TransformGroup name="tipOcclusionUpdateArea1Start" translation="-0.373954 0 -0.389141" nodeId="51">
+            <TransformGroup name="tipOcclusionUpdateArea1End" translation="0.762472 0 1.008" nodeId="52"/>
+          </TransformGroup>
+        </TransformGroup>
+        <TransformGroup name="collisions" nodeId="53"/>
+        <TransformGroup name="levelAreas" nodeId="54">
+          <TransformGroup name="levelAreaStart" translation="2.161 0 1.68" nodeId="55"/>
+          <TransformGroup name="levelAreaWidth" translation="-2.161 0 1.68" nodeId="56"/>
+          <TransformGroup name="levelAreaHeight" translation="2.161 0 -1.68" nodeId="57"/>
+        </TransformGroup>
+      </TransformGroup>
+  </Scene>
+
+</i3D>

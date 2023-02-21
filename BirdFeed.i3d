@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<i3D name="woolPallet" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+  <Asset>
+    <Export program="GIANTS Editor 64bit" version="9.0.3"/>
+  </Asset>
+
+  <Files>
+  </Files>
+
+
+  <Materials>
+    <Material name="Material" materialId="42" diffuseColor="0.8 0.8 0.8 1" emissiveColor="0 0 0 1" specularColor="0.8 1 0.8">
+    </Material>
+  </Materials>
+
+
+  <Shapes externalShapesFile="BirdFeed.i3d.shapes">
+  </Shapes>
+
+
+  <Dynamics>
+  </Dynamics>
+
+  <Scene>
+      <Shape shapeId="1" name="birdFeed" translation="4.42701e-15 0 -2.35159e-08" rotation="1.28066e-05 3.81667e-14 2.79889e-12" dynamic="true" collisionMask="18886922" staticFriction="1" dynamicFriction="1" angularDamping="0.95" density="0.3" clipDistance="100" nodeId="46" materialIds="42" castsShadows="true" receiveShadows="true" nonRenderable="true">
+        <Shape shapeId="2" name="birdFeed_vis" clipDistance="100" nodeId="47" materialIds="42" castsShadows="true" receiveShadows="true">
+          <TransformGroup name="dischargeNode" nodeId="48"/>
+        </Shape>
+      </Shape>
+  </Scene>
+
+</i3D>

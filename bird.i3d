@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<i3D name="Bird" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+  <Asset>
+    <Export program="GIANTS Editor 64bit" version="9.0.3"/>
+  </Asset>
+
+  <Files>
+  </Files>
+
+
+  <Materials>
+    <Material name="bird_mat" materialId="4" diffuseColor="0.0156863 0.00392157 0.8 1" specularColor="0.494118 1 0">
+    </Material>
+  </Materials>
+
+
+  <Shapes externalShapesFile="bird.i3d.shapes">
+  </Shapes>
+
+
+  <Dynamics>
+  </Dynamics>
+
+  <Scene>
+      <TransformGroup name="root" rotation="-6.83019e-06 -0 0" nodeId="7">
+        <TransformGroup name="body" rotation="90 -0 0" nodeId="8">
+          <TransformGroup name="bodyMain" translation="0 1.17197e-09 -0.0155233" rotation="-32.0223 0.264915 1.08778" nodeId="9">
+            <TransformGroup name="bodyAss" translation="0 2.82739e-09 -0.0253479" rotation="145.465 -1.51072 -2.44777" nodeId="10"/>
+            <TransformGroup name="bodyLeftWing" translation="0 2.82739e-09 -0.0253479" rotation="20.7777 81.4703 25.6777" nodeId="11"/>
+            <TransformGroup name="bodyNeck" translation="0 2.82739e-09 -0.0253479" rotation="-21.2457 0.71343 -0.133818" nodeId="12">
+              <TransformGroup name="bodyHead" translation="2.91038e-11 1.80194e-09 -0.0222293" rotation="-13.904 0.239514 -0.0292049" nodeId="13"/>
+            </TransformGroup>
+            <TransformGroup name="bodyRightWing" translation="0 2.82739e-09 -0.0253479" rotation="-44.0284 -74.005 36.308" nodeId="14"/>
+          </TransformGroup>
+          <TransformGroup name="leftBody" translation="0 1.17197e-09 -0.0155233" rotation="-152.593 62.924 -156.911" nodeId="15">
+            <TransformGroup name="leftLeg" translation="7.27596e-12 6.40284e-10 -0.00563678" rotation="-26.7985 62.2585 -16.3739" nodeId="16"/>
+          </TransformGroup>
+          <TransformGroup name="rightBody" translation="0 1.17197e-09 -0.0155233" rotation="-174.888 -68.314 -177.223" nodeId="17">
+            <TransformGroup name="rightLeg" translation="-8.80391e-10 3.7835e-10 -0.00652203" rotation="-5.20263 -67.6046 3.48449" nodeId="18"/>
+          </TransformGroup>
+        </TransformGroup>
+        <Shape shapeId="1" name="bird" rotation="-6.83019e-06 0 0" nodeId="19" materialIds="4" skinBindNodeIds="8 15 16 17 18 9 10 12 13 11 14"/>
+      </TransformGroup>
+  </Scene>
+
+
+  <Animation externalAnimFile="bird.i3d.anim" />
+</i3D>

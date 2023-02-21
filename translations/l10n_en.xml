@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<l10n>
+     <texts>
+		<text name="fillType_birdSeed" text="Bird Seed"/>
+		<text name="fillType_birdSeed1" text="Bird Seed 1kg"/>
+		<text name="fillType_birdSeed2" text="Bird Seed 2kg"/>
+		<text name="fillType_birdSeed5" text="Bird Seed 5kg"/>
+        <text name="function_birdFeeder" text="Placeable bird feeder, remember to buy bird seed and carry it to the feeder, and watch birds come and eat." />
+        <text name="typeDesc_birdSeed" text="Food for birds, add this food into the bird feeder bought from the placeables." />
+        <text name="unit_gramShort" text="g" />
+	</texts>
+</l10n>

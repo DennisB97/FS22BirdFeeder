@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<map xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../shared/xml/schema/fillTypes.xsd">
+
+	<fillTypes>
+		<fillType name="BIRDSEED" title="$l10n_fillType_birdSeed" showOnPriceTable="false" unitShort="$l10n_unit_gramShort">
+			<physics massPerLiter="0.001" maxPhysicalSurfaceAngle="38" />
+			<image hud="images/birdSeedIcon.dds" />
+			<pallet filename="birdSeed1.xml" />
+			<economy pricePerLiter="0.2000">
+				<factors>
+					<factor period="1"  value="1.00" />
+					<factor period="2"  value="1.00" />
+					<factor period="3"  value="1.00" />
+					<factor period="4"  value="1.00" />
+					<factor period="5"  value="1.00" />
+					<factor period="6"  value="1.00" />
+					<factor period="7"  value="1.00" />
+					<factor period="8"  value="1.00" />
+					<factor period="9"  value="1.00" />
+					<factor period="10" value="1.00" />
+					<factor period="11" value="1.00" />
+					<factor period="12" value="1.00" />
+				</factors>
+			</economy>
+        </fillType>
+	</fillTypes>
+		
+    <fillTypeCategories>
+		<fillTypeCategory name="PRODUCT">BIRDSEED</fillTypeCategory>
+		<fillTypeCategory name="BULK" >BIRDSEED</fillTypeCategory>
+		<fillTypeCategory name="SHOVEL" >BIRDSEED</fillTypeCategory>
+		<fillTypeCategory name="TRAINWAGON" >BIRDSEED</fillTypeCategory>
+    </fillTypeCategories>
+	
+	
+    <fillTypeSounds>
+        <fillTypeSound fillTypes="BIRDSEED">
+            <sound template="grainSmallFill"/>
+        </fillTypeSound>
+    </fillTypeSounds>
+</map>

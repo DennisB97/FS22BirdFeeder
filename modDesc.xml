@@ -1,0 +1,67 @@
+﻿<?xml version="1.0" encoding="utf-8"
+standalone="no" ?>
+<modDesc descVersion="61">
+<author>Dennis B</author>
+<version>1.0.0.0</version>
+
+<title>
+<en>Bird Feeder</en>
+<de>Vogelfütterer</de>
+</title>
+
+<description>
+<en>Decorational bird feeder with feeding functionality and birds</en>
+<de>Dekorativer Vogelhäuschen mit Fütterungsfunktion und Vögeln</de>
+</description>
+
+<iconFilename>Images/birdFeeder.dds</iconFilename>
+<multiplayer supported="true"/>
+<l10n filenamePrefix="translations/l10n"/>
+
+<storeItems>
+<storeItem xmlFilename="birdFeeder.xml"/>
+<storeItem xmlFilename="birdSeed1.xml"/>
+</storeItems>
+
+<brands>
+<brand title="Animal Experience" image="Images/AnimalExperience.dds" name="AnimalExperience"/>
+</brands>
+
+<extraSourceFiles>
+<sourceFile filename="scripts/birdFeederMod.lua" />
+<sourceFile filename="scripts/birdStates.lua" />
+<sourceFile filename="scripts/feederBird.lua" />
+<sourceFile filename="scripts/birdNavigation.lua" />
+<sourceFile filename="scripts/birdNavigationStates.lua" />
+</extraSourceFiles>
+
+<specializations>
+<specialization name="placeableFeeder" className="PlaceableFeeder" filename="scripts/specializations/placeableFeeder.lua"/>
+<specialization name="customVehicleInfo" className="CustomVehicleInfo" filename="scripts/specializations/customVehicleInfo.lua"/>
+<specialization name="customDischarge" className="CustomDischarge" filename="scripts/specializations/customDischarge.lua"/>
+</specializations>
+
+<vehicleTypes>
+<type name="birdSeed" className="Vehicle" filename="$dataS/scripts/vehicles/Vehicle.lua" >
+<!-- <specialization name="baseMaterial" /> -->
+<!-- <specialization name="tipOccluder" /> -->
+<!-- <specialization name="foliageBending" /> -->
+<!-- <specialization name="dynamicallyLoadedParts" /> -->
+<!-- <specialization name="mountable" /> -->
+<!-- <specialization name="dashboard" /> -->
+<!-- <specialization name="animatedVehicle" /> -->
+<specialization name="fillUnit" />
+<specialization name="fillVolume" />
+<specialization name="fillTriggerVehicle" />
+<specialization name="dischargeable" />
+<specialization name="tensionBeltObject" />
+<specialization name="pallet" />
+<specialization name="customVehicleInfo" />
+<specialization name="customDischarge" />
+</type>
+</vehicleTypes>
+
+<fillTypes filename="newfilltypes.xml" />
+
+
+</modDesc>
