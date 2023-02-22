@@ -9,11 +9,6 @@ BirdFeederMod.birdNavigation = nil
 
 
 
-function BirdFeederMod:testTimer()
-    print("test timer")
-
-end
-
 function BirdFeederMod:loadMap(savegame)
 	
 

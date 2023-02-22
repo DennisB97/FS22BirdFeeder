@@ -15,7 +15,7 @@ function BirdNavNode.new(x,y,z,parent)
     self.positionZ = z
     -- all links 32/64 bits used, 4 bits layer index, 22bits node index, 6bit for highest resolution voxels if leaf node
     self.parent = parent
-    self.child = 0
+    self.children = {}
     self.xNeighbour = 0
     self.xMinusNeighbour = 0
     self.yNeighbour = 0
@@ -25,57 +25,6 @@ function BirdNavNode.new(x,y,z,parent)
     self.leafVoxels = 0
     return self
 end
-
-
-function BirdNavigationGrid:getTreeNode(link)
-
-    if link == nil or link == 0 or self == nil then
-        return nil
-    end
-
-    local layerIndex,nodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(link)
-
-    return self.nodeTree[layerIndex][nodeIndex]
-end
-
-
--- Function that compacts three variables into one link variable.
--- From least significant bit, 4bits layerIndex, 22bits nodeIndex and 6bits for voxelIndex, rest of the 32bits not used.
-function BirdNavigationGrid.compactLink(layerIndex,nodeIndex,voxelIndex)
-    local layerIndexMask = 0x000000000000000F
-    local nodeIndexMask  = 0x00000000003FFFFF
-    local voxelIndexMask = 0x000000000000003F
-
-    local compactedValue = 0
-    layerIndex = bitAND(layerIndexMask,layerIndex)
-    nodeIndex = bitAND(nodeIndexMask,nodeIndex)
-    voxelIndex = bitAND(voxelIndexMask,voxelIndex)
-
-    compactedValue = bitOR(layerIndex,compactedValue)
-    compactedValue = bitOR(math.floor(nodeIndex * (2^4)),compactedValue)
-    compactedValue = bitOR(math.floor(voxelIndex * (2^26)),compactedValue)
-
-    return compactedValue
-
-end
-
-function BirdNavigationGrid.deCompactLink(link)
-
-    local layerIndexMask = 0x000000000000000F
-    local nodeIndexMask  = 0x0000000003FFFFF0
-    local voxelIndexMask = 0x00000000FC000000
-
-    local layerIndex = bitAND(layerIndexMask,link)
-    local nodeIndex = bitAND(nodeIndexMask,link)
-    local voxelIndex = bitAND(voxelIndexMask,link)
-
-    nodeIndex = math.floor(nodeIndex / (2^4))
-    voxelIndex = math.floor(voxelIndex / (2^26))
-
-    return layerIndex,nodeIndex,voxelIndex
-
-end
-
 
 
 

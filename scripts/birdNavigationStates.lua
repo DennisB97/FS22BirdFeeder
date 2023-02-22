@@ -241,17 +241,17 @@ function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
     local startLocationY = parent.positionY - (parentVoxelSize / 4)
     local startLocationZ = parent.positionZ - (parentVoxelSize / 4)
 
-    local compactedParentIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,0)
+--     local compactedParentIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,0)
 
     for y = 0, 1 do
         for z = 0 , 1 do
             for x = 0, 1 do
-                local newNode = BirdNavNode.new(startLocationX + (x * (parentVoxelSize / 2)) ,startLocationY + (y * (parentVoxelSize / 2)), startLocationZ + (z * (parentVoxelSize / 2)),compactedParentIndex)
-                local firstChildIndex = self.owner:addNode(self.currentLayerIndex + 1,newNode)
-                local compactedChildIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex + 1,firstChildIndex,0)
-                if parent.child == 0 then
-                    parent.child = compactedChildIndex
-                end
+                local newNode = BirdNavNode.new(startLocationX + (x * (parentVoxelSize / 2)) ,startLocationY + (y * (parentVoxelSize / 2)), startLocationZ + (z * (parentVoxelSize / 2)),parent)
+                self.owner:addNode(self.currentLayerIndex + 1,newNode)
+--                 local firstChildIndex = self.owner:addNode(self.currentLayerIndex + 1,newNode)
+--                 local compactedChildIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex + 1,firstChildIndex,0)
+                table.insert(parent.children,newNode)
+
             end
         end
     end
@@ -274,56 +274,56 @@ end
 function BirdNavGridStateGenerate:linkNeighbours()
 
     local firstChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
-    firstChild.xNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 1,0)
-    firstChild.zNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 2,0)
-    firstChild.yNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 4,0)
+    firstChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 1]
+    firstChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
+    firstChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
 
     local secondChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 1]
-    secondChild.xMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,0)
-    secondChild.zNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 2,0)
-    secondChild.yNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 4,0)
-    self:LinkOutsideNeighbour(secondChild,self.currentNodeIndex + 1,self.EDirections.X,2)
+    secondChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
+    secondChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
+    secondChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+    self:LinkOutsideNeighbour(secondChild,self.EDirections.X,2)
 
     local thirdChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
-    thirdChild.xNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 3)
-    thirdChild.zMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 2,0)
-    thirdChild.yNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 4,0)
-    self:LinkOutsideNeighbour(thirdChild,self.currentNodeIndex + 2,self.EDirections.Z,3)
+    thirdChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 3]
+    thirdChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 2]
+    thirdChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+    self:LinkOutsideNeighbour(thirdChild,self.EDirections.Z,3)
 
     local fourthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 3]
-    fourthChild.xMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 2)
-    fourthChild.zMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 2,0)
-    fourthChild.yNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 4,0)
-    self:LinkOutsideNeighbour(fourthChild,self.currentNodeIndex + 3,self.EDirections.X,4)
-    self:LinkOutsideNeighbour(fourthChild,self.currentNodeIndex + 3,self.EDirections.Z,4)
+    fourthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
+    fourthChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 2]
+    fourthChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+    self:LinkOutsideNeighbour(fourthChild,self.EDirections.X,4)
+    self:LinkOutsideNeighbour(fourthChild,self.EDirections.Z,4)
 
     local fifthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    fifthChild.xNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 5)
-    fifthChild.zNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 6,0)
-    fifthChild.yMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 4,0)
-    self:LinkOutsideNeighbour(fifthChild,self.currentNodeIndex + 4,self.EDirections.Y,5)
+    fifthChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
+    fifthChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
+    fifthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
+    self:LinkOutsideNeighbour(fifthChild,self.EDirections.Y,5)
 
     local sixthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
-    sixthChild.xMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 4)
-    sixthChild.zNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 7,0)
-    sixthChild.yMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 4,0)
-    self:LinkOutsideNeighbour(sixthChild,self.currentNodeIndex + 5,self.EDirections.Y,6)
-    self:LinkOutsideNeighbour(sixthChild,self.currentNodeIndex + 5,self.EDirections.X,6)
+    sixthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+    sixthChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
+    sixthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
+    self:LinkOutsideNeighbour(sixthChild,self.EDirections.Y,6)
+    self:LinkOutsideNeighbour(sixthChild,self.EDirections.X,6)
 
     local seventhChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
-    seventhChild.xNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 7)
-    seventhChild.zMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 4,0)
-    seventhChild.yMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 4,0)
-    self:LinkOutsideNeighbour(seventhChild,self.currentNodeIndex + 6,self.EDirections.Y,7)
-    self:LinkOutsideNeighbour(seventhChild,self.currentNodeIndex + 6,self.EDirections.Z,7)
+    seventhChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
+    seventhChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+    seventhChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
+    self:LinkOutsideNeighbour(seventhChild,self.EDirections.Y,7)
+    self:LinkOutsideNeighbour(seventhChild,self.EDirections.Z,7)
 
     local eigthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
-    eigthChild.xMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,self.currentNodeIndex + 6)
-    eigthChild.zMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex + 5,0)
-    eigthChild.yMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex - 4,0)
-    self:LinkOutsideNeighbour(eigthChild,self.currentNodeIndex + 7,self.EDirections.Y,8)
-    self:LinkOutsideNeighbour(eigthChild,self.currentNodeIndex + 7,self.EDirections.X,8)
-    self:LinkOutsideNeighbour(eigthChild,self.currentNodeIndex + 7,self.EDirections.Z,8)
+    eigthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
+    eigthChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
+    eigthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
+    self:LinkOutsideNeighbour(eigthChild,self.EDirections.Y,8)
+    self:LinkOutsideNeighbour(eigthChild,self.EDirections.X,8)
+    self:LinkOutsideNeighbour(eigthChild,self.EDirections.Z,8)
 
     self.currentNodeIndex = self.currentNodeIndex + 8
     if self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex] == nil then
@@ -333,15 +333,21 @@ function BirdNavGridStateGenerate:linkNeighbours()
 
 end
 
+-- octree voxels bottom  |3| |1| and then top of voxel children |7| |5|
+--                       |4| |2|                                |8| |6|
+--                                   1 -> 2 is positive X
+--                                   1 -> 3 is positive Z
+--                                   1 -> 5 is positive Y
 
-function BirdNavGridStateGenerate:LinkOutsideNeighbour(node,nodeIndex,direction,childNumber)
+
+function BirdNavGridStateGenerate:LinkOutsideNeighbour(node,direction,childNumber)
 
     if node == nil or direction == nil or self == nil or self.owner == nil then
         return
     end
 
 
-    local parentNode = self.owner:getTreeNode(node.parent)
+    local parentNode = node.parent
 
     if parentNode == nil then
         Logging.warning("parentNode was nil in BirdNavGridStateGenerate:LinkOutsideNeighbour")
@@ -353,199 +359,101 @@ function BirdNavGridStateGenerate:LinkOutsideNeighbour(node,nodeIndex,direction,
 
     if direction ==  self.EDirections.X then
 
-        if parentNode.xNeighbour ~= 0 then
+        if parentNode.xNeighbour ~= nil and parentNode.xNeighbour ~= 0 then
 
-            local neighbourNode = self.owner:getTreeNode(parentNode.xNeighbour)
-            if neighbourNode.child == 0 then
+            local neighbourNode = parentNode.xNeighbour
+            if #neighbourNode.children == 0 then
                 node.xNeighbour = parentNode.xNeighbour
                 return
             end
 
-            local layerIndex,neighbourNodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(neighbourNode.child)
-            local childIndex = self:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,self.currentLayerIndex,nodeIndex)
-            node.xNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,childIndex,0)
+            if childNumber == 2 then
+                node.xNeighbour = parentNode.xNeighbour.children[1]
+                neighbourNode.children[1].xMinusNeighbour = node
+
+            elseif childNumber == 4 then
+                node.xNeighbour = parentNode.xNeighbour.children[3]
+                neighbourNode.children[3].xMinusNeighbour = node
+
+            elseif childNumber == 6 then
+                node.xNeighbour = parentNode.xNeighbour.children[5]
+                neighbourNode.children[5].xMinusNeighbour = node
+
+            elseif childNumber == 8 then
+                node.xNeighbour = parentNode.xNeighbour.children[7]
+                neighbourNode.children[7].xMinusNeighbour = node
+
+            end
+
             return
         end
 
---     elseif direction == self.EDirections.MINUSX then
---
---         if parentNode.xMinusNeighbour ~= 0 then
---
---             local neighbourNode = self.owner:getTreeNode(parentNode.xMinusNeighbour)
---             if neighbourNode.child == 0 then
---                 node.xMinusNeighbour = parentNode.xMinusNeighbour
---                 return
---             end
---
---             local layerIndex,neighbourNodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(neighbourNode.child)
---             local childIndex = self:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,self.currentLayerIndex,nodeIndex)
---             node.xMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,childIndex,0)
---             return
---         else
---             node.xMinusNeighbour = nil
---         end
---
-
     elseif direction == self.EDirections.Y then
 
-        if parentNode.yNeighbour ~= 0 then
+        if parentNode.yNeighbour ~= nil and parentNode.yNeighbour ~= 0 then
 
-            local neighbourNode = self.owner:getTreeNode(parentNode.yNeighbour)
-            if neighbourNode.child == 0 then
+            local neighbourNode = parentNode.yNeighbour
+            if #neighbourNode.children == 0 then
                 node.yNeighbour = parentNode.yNeighbour
                 return
             end
 
-            local layerIndex,neighbourNodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(neighbourNode.child)
-            local childIndex = self:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,self.currentLayerIndex,nodeIndex)
-            node.yNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,childIndex,0)
+             if childNumber == 5 then
+                node.yNeighbour = parentNode.yNeighbour.children[1]
+                neighbourNode.children[1].yMinusNeighbour = node
+
+            elseif childNumber == 6 then
+                node.yNeighbour = parentNode.yNeighbour.children[2]
+                neighbourNode.children[2].yMinusNeighbour = node
+
+            elseif childNumber == 7 then
+                node.yNeighbour = parentNode.yNeighbour.children[3]
+                neighbourNode.children[3].yMinusNeighbour = node
+
+            elseif childNumber == 8 then
+                node.yNeighbour = parentNode.yNeighbour.children[4]
+                neighbourNode.children[4].yMinusNeighbour = node
+
+            end
+
             return
         end
 
 
     elseif direction == self.EDirections.Z then
 
-        if parentNode.zNeighbour ~= 0 then
+        if parentNode.zNeighbour ~= nil and parentNode.zNeighbour ~= 0 then
 
-            local neighbourNode = self.owner:getTreeNode(parentNode.zNeighbour)
-            if neighbourNode.child == 0 then
+            local neighbourNode = parentNode.zNeighbour
+            if #neighbourNode.children == 0 then
                 node.zNeighbour = parentNode.zNeighbour
                 return
             end
 
-            local layerIndex,neighbourNodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(neighbourNode.child)
-            local childIndex = self:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,self.currentLayerIndex,nodeIndex)
-            node.zNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,childIndex,0)
+            if childNumber == 3 then
+                node.zNeighbour = parentNode.zNeighbour.children[1]
+                neighbourNode.children[1].zMinusNeighbour = node
+
+            elseif childNumber == 4 then
+                node.zNeighbour = parentNode.zNeighbour.children[2]
+                neighbourNode.children[2].zMinusNeighbour = node
+
+            elseif childNumber == 7 then
+                node.zNeighbour = parentNode.zNeighbour.children[5]
+                neighbourNode.children[5].zMinusNeighbour = node
+
+            elseif childNumber == 8 then
+                node.zNeighbour = parentNode.zNeighbour.children[6]
+                neighbourNode.children[6].zMinusNeighbour = node
+
+            end
+
             return
         end
 
-
---     elseif direction == self.EDirections.MINUSZ then
---
---         if parentNode.zMinusNeighbour ~= 0 then
---
---             local neighbourNode = self.owner:getTreeNode(parentNode.zMinusNeighbour)
---             if neighbourNode.child == 0 then
---                 node.zMinusNeighbour = parentNode.zMinusNeighbour
---                 return
---             end
---
---             local layerIndex,neighbourNodeIndex,voxelIndex = BirdNavigationGrid.deCompactLink(neighbourNode.child)
---             local childIndex = self:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,self.currentLayerIndex,nodeIndex)
---             node.zMinusNeighbour = BirdNavigationGrid.compactLink(self.currentLayerIndex,childIndex,0)
---             return
---         else
---             node.zMinusNeighbour = nil
---         end
---
-
     end
 
 end
-
-
--- octree voxels bottom  |3| |1| and then top of voxel children |7| |5|
---                       |4| |2|                                |8| |6|
---                                   1 -> 2 is positive X
---                                   1 -> 3 is positive Z
---                                   1 -> 5 is positive Y
-
-function BirdNavGridStateGenerate:findChildNodeIndex(neighbourNodeIndex,childNumber,direction,layerIndex,nodeIndex)
-
-    if neighbourNodeIndex == nil or self == nil or self.owner == nil then
-        return nil
-    end
-
-    if direction ==  self.EDirections.X then
-
-        if childNumber == 2 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex].xMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex
-        elseif childNumber == 4 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 2].xMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 2
-        elseif childNumber == 6 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 4].xMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 4
-        elseif childNumber == 8 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 6].xMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 6
-        end
-
-
---     elseif direction == self.EDirections.MINUSX then
---
---         if childNumber == 1 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 1].xNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 1
---         elseif childNumber == 3 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 3].xNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 3
---         elseif childNumber == 5 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 5].xNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 5
---         elseif childNumber == 7 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 7].xNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 7
---         end
-
-    elseif direction == self.EDirections.Y then
-
-        if childNumber == 5 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex].yMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex
-        elseif childNumber == 6 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 1].yMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 1
-        elseif childNumber == 7 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 2].yMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 2
-        elseif childNumber == 8 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 3].yMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 3
-        end
-
-    elseif direction == self.EDirections.Z then
-
-        if childNumber == 3 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex].zMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex
-        elseif childNumber == 4 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 1].zMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 1
-        elseif childNumber == 7 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 4].zMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 4
-        elseif childNumber == 8 then
-            self.owner.nodeTree[layerIndex][neighbourNodeIndex + 5].zMinusNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
-            return neighbourNodeIndex + 5
-        end
-
---     elseif direction == self.EDirections.MINUSZ then
---
---         if childNumber == 1 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 2].zNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 2
---         elseif childNumber == 2 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 3].zNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 3
---         elseif childNumber == 5 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 6].zNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 6
---         elseif childNumber == 6 then
---             self.owner.nodeTree[layerIndex][neighbourNodeIndex + 7].zNeighbour = BirdNavigationGrid.compactLink(layerIndex,nodeIndex,0)
---             return neighbourNodeIndex + 7
---         end
---
-    end
-
-    return nil
-
-end
-
-
-
-
 
 
 function BirdNavGridStateGenerate:voxelOverlapCheck(x,y,z, extentRadius)
