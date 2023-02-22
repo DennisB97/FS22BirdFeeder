@@ -8,5 +8,7 @@
         <text name="function_birdFeeder" text="Placeable bird feeder, remember to buy bird seed and carry it to the feeder, and watch birds come and eat." />
         <text name="typeDesc_birdSeed" text="Food for birds, add this food into the bird feeder bought from the placeables." />
         <text name="unit_gramShort" text="g" />
+        <text name="input_BIRDFEEDER_DBG_OCTREE_LAYER_DOWN" text="Lower octree debug layer" />
+        <text name="input_BIRDFEEDER_DBG_OCTREE_LAYER_UP" text="Increase octree debug layer" />
 	</texts>
 </l10n>

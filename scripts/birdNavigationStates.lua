@@ -27,6 +27,10 @@ function BirdNavGridStateBase:update(dt)
 
 end
 
+function BirdNavGridStateBase:destroy()
+
+
+end
 
 
 --- GRID PREPARE STATE CLASS ---
@@ -89,6 +93,10 @@ function BirdNavGridStatePrepare:prepareGrid()
 
 end
 
+function BirdNavGridStatePrepare:destroy()
+    BirdNavGridStatePrepare:superClass().destroy(self)
+
+end
 
 
 
@@ -99,6 +107,7 @@ InitObjectClass(BirdNavGridStateGenerate, "BirdNavGridStateGenerate")
 
 function BirdNavGridStateGenerate.new(customMt)
     local self = BirdNavGridStateGenerate:superClass().new(customMt or BirdNavGridStateGenerate_mt)
+
     self.collisionMask = CollisionFlag.STATIC_WORLD + CollisionFlag.WATER
     self.bTraceVoxelSolid = true
     self.dynamicLoopLimit = 50
@@ -110,7 +119,7 @@ function BirdNavGridStateGenerate.new(customMt)
     self.currentNodeIndex = 1
     self.currentChildIndex = 0
     self.startLocation = {}
-    self.EInternalState = {UNDEFINED = -1 ,CREATE = 0, LINKNEIGHBOURS = 1}
+    self.EInternalState = {UNDEFINED = -1 ,CREATE = 0, IDLE = 1}
     self.currentState = self.EInternalState.CREATE
     self.EDirections = {X = 0, MINUSX = 1, Y = 2, MINUSY = 3, Z = 4, MINUSZ = 5}
 
@@ -133,6 +142,11 @@ end
 
 function BirdNavGridStateGenerate:leave()
     BirdNavGridStateGenerate:superClass().leave(self)
+
+end
+
+function BirdNavGridStateGenerate:destroy()
+    BirdNavGridStateGenerate:superClass().destroy(self)
 
 end
 
@@ -172,12 +186,10 @@ function BirdNavGridStateGenerate:update(dt)
 
             if self:doOctree() == true then
                 Logging.info("BirdNavGridStateGenerate done generating octree!")
-                self.currentState = self.EInternalState.UNDEFINED
---                 self.owner:changeState(self.owner.EBirdNavigationStates.DEBUG)
-                self.owner.currentState = self.owner.EBirdNavigationStates.IDLE
+                self.currentState = self.EInternalState.IDLE
+                self.owner:changeState(self.owner.EBirdNavigationStates.IDLE)
             end
-        elseif self.currentState == self.EInternalState.LINKNEIGHBOURS then
-            self:linkNeighbours()
+
         end
 
 
@@ -197,16 +209,21 @@ function BirdNavGridStateGenerate:doOctree()
     local currentDivision = math.pow(2,self.currentLayerIndex - 1)
     local parentVoxelSize = self.owner.terrainSize / currentDivision
 
-    -- if next layer would be lower resolution than the leaf nodes should be then octree is done
-    if parentVoxelSize / 2 < self.owner.maxVoxelResolution * 4 then
+     -- if current layer is lower resolution than the leaf nodes should be then octree is done
+    if parentVoxelSize < self.owner.maxVoxelResolution * 4 then
         return true
     end
 
     local currentNode = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
 
-    self:createChildren(currentNode, parentVoxelSize)
+    if parentVoxelSize == self.owner.maxVoxelResolution * 4 then
+        print("parent voxel is 8m")
+        self:createLeafVoxels(currentNode,parentVoxelSize)
+    else
+        self:createChildren(currentNode, parentVoxelSize)
+    end
 
-    -- If all nodes for the parents have been added then need to link the neighbours before going down the layer to the just created nodes.
+    -- If all nodes for the parents have been added then next layer
     if self:incrementNodeGeneration() == true then
 
         self.currentLayerIndex = self.currentLayerIndex + 1
@@ -215,7 +232,6 @@ function BirdNavGridStateGenerate:doOctree()
             return true
         end
 
-        self.currentState = self.EInternalState.LINKNEIGHBOURS
         return false
     end
 
@@ -223,6 +239,17 @@ function BirdNavGridStateGenerate:doOctree()
 
 end
 
+function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
+
+    parent.leafVoxels = -1
+
+
+
+
+
+
+
+end
 
 function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
 
@@ -241,17 +268,16 @@ function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
     local startLocationY = parent.positionY - (parentVoxelSize / 4)
     local startLocationZ = parent.positionZ - (parentVoxelSize / 4)
 
---     local compactedParentIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex,self.currentNodeIndex,0)
-
+    local childNumber = 1
+    parent.children = {}
     for y = 0, 1 do
         for z = 0 , 1 do
             for x = 0, 1 do
                 local newNode = BirdNavNode.new(startLocationX + (x * (parentVoxelSize / 2)) ,startLocationY + (y * (parentVoxelSize / 2)), startLocationZ + (z * (parentVoxelSize / 2)),parent)
                 self.owner:addNode(self.currentLayerIndex + 1,newNode)
---                 local firstChildIndex = self.owner:addNode(self.currentLayerIndex + 1,newNode)
---                 local compactedChildIndex = BirdNavigationGrid.compactLink(self.currentLayerIndex + 1,firstChildIndex,0)
                 table.insert(parent.children,newNode)
-
+                self:findNeighbours(newNode,childNumber)
+                childNumber = childNumber + 1
             end
         end
     end
@@ -271,206 +297,188 @@ function BirdNavGridStateGenerate:incrementNodeGeneration()
     return false
 end
 
-function BirdNavGridStateGenerate:linkNeighbours()
 
-    local firstChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
-    firstChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 1]
-    firstChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
-    firstChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
+-- octree voxels bottom index guide  |3| |1| and then top of voxel  |7| |5|
+--                                   |4| |2|                        |8| |6|
+--                                            1 -> 2 is positive X
+--                                            1 -> 3 is positive Z
+--                                            1 -> 5 is positive Y
 
-    local secondChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 1]
-    secondChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
-    secondChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
-    secondChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    self:LinkOutsideNeighbour(secondChild,self.EDirections.X,2)
+function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
 
-    local thirdChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
-    thirdChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 3]
-    thirdChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 2]
-    thirdChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    self:LinkOutsideNeighbour(thirdChild,self.EDirections.Z,3)
-
-    local fourthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 3]
-    fourthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 2]
-    fourthChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 2]
-    fourthChild.yNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    self:LinkOutsideNeighbour(fourthChild,self.EDirections.X,4)
-    self:LinkOutsideNeighbour(fourthChild,self.EDirections.Z,4)
-
-    local fifthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    fifthChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
-    fifthChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
-    fifthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
-    self:LinkOutsideNeighbour(fifthChild,self.EDirections.Y,5)
-
-    local sixthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
-    sixthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    sixthChild.zNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
-    sixthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
-    self:LinkOutsideNeighbour(sixthChild,self.EDirections.Y,6)
-    self:LinkOutsideNeighbour(sixthChild,self.EDirections.X,6)
-
-    local seventhChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
-    seventhChild.xNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
-    seventhChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 4]
-    seventhChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
-    self:LinkOutsideNeighbour(seventhChild,self.EDirections.Y,7)
-    self:LinkOutsideNeighbour(seventhChild,self.EDirections.Z,7)
-
-    local eigthChild = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 7]
-    eigthChild.xMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 6]
-    eigthChild.zMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex + 5]
-    eigthChild.yMinusNeighbour = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex - 4]
-    self:LinkOutsideNeighbour(eigthChild,self.EDirections.Y,8)
-    self:LinkOutsideNeighbour(eigthChild,self.EDirections.X,8)
-    self:LinkOutsideNeighbour(eigthChild,self.EDirections.Z,8)
-
-    self.currentNodeIndex = self.currentNodeIndex + 8
-    if self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex] == nil then
-        self.currentNodeIndex = 1
-        self.currentState = self.EInternalState.CREATE
+    if node == nil or childNumber < 1 or childNumber > 8 then
+        return
     end
+
+
+    if childNumber == 1 then
+        self:findOutsideNeighbours(2,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(3,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(5,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 2 then
+        node.xMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].xNeighbour = node
+
+        self:findOutsideNeighbours(4,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(6,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 3 then
+        node.zMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].zNeighbour = node
+
+        self:findOutsideNeighbours(4,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(7,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 4 then
+        node.zMinusNeighbour = node.parent.children[2]
+        node.parent.children[2].zNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[3]
+        node.parent.children[3].xNeighbour = node
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSY,node)
+
+
+
+    elseif childNumber == 5 then
+        node.yMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].yNeighbour = node
+
+        self:findOutsideNeighbours(6,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(7,self.EDirections.MINUSZ,node)
+
+    elseif childNumber == 6 then
+        node.yMinusNeighbour = node.parent.children[2]
+        node.parent.children[2].yNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[5]
+        node.parent.children[5].xNeighbour = node
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSZ,node)
+
+    elseif childNumber == 7 then
+        node.yMinusNeighbour = node.parent.children[3]
+        node.parent.children[3].yNeighbour = node
+
+        node.zMinusNeighbour = node.parent.children[5]
+        node.parent.children[5].zNeighbour = node
+
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSX,node)
+
+    elseif childNumber == 8 then
+        node.yMinusNeighbour = node.parent.children[4]
+        node.parent.children[4].yNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[7]
+        node.parent.children[7].xNeighbour = node
+
+        node.zMinusNeighbour = node.parent.children[6]
+        node.parent.children[6].zNeighbour = node
+
+    end
+
+
+
 
 end
 
--- octree voxels bottom  |3| |1| and then top of voxel children |7| |5|
---                       |4| |2|                                |8| |6|
---                                   1 -> 2 is positive X
---                                   1 -> 3 is positive Z
---                                   1 -> 5 is positive Y
-
-
-function BirdNavGridStateGenerate:LinkOutsideNeighbour(node,direction,childNumber)
-
-    if node == nil or direction == nil or self == nil or self.owner == nil then
-        return
-    end
-
+function BirdNavGridStateGenerate:findOutsideNeighbours(neighbourChildNumber,direction,node)
 
     local parentNode = node.parent
 
-    if parentNode == nil then
-        Logging.warning("parentNode was nil in BirdNavGridStateGenerate:LinkOutsideNeighbour")
-        return
-    end
+    if direction ==  self.EDirections.MINUSX then
 
+        if parentNode.xMinusNeighbour ~= nil then
 
-
-
-    if direction ==  self.EDirections.X then
-
-        if parentNode.xNeighbour ~= nil and parentNode.xNeighbour ~= 0 then
-
-            local neighbourNode = parentNode.xNeighbour
-            if #neighbourNode.children == 0 then
-                node.xNeighbour = parentNode.xNeighbour
+            local neighbourNode = parentNode.xMinusNeighbour
+            if neighbourNode.children == nil then
+                node.xMinusNeighbour = parentNode.xMinusNeighbour
                 return
             end
 
-            if childNumber == 2 then
-                node.xNeighbour = parentNode.xNeighbour.children[1]
-                neighbourNode.children[1].xMinusNeighbour = node
-
-            elseif childNumber == 4 then
-                node.xNeighbour = parentNode.xNeighbour.children[3]
-                neighbourNode.children[3].xMinusNeighbour = node
-
-            elseif childNumber == 6 then
-                node.xNeighbour = parentNode.xNeighbour.children[5]
-                neighbourNode.children[5].xMinusNeighbour = node
-
-            elseif childNumber == 8 then
-                node.xNeighbour = parentNode.xNeighbour.children[7]
-                neighbourNode.children[7].xMinusNeighbour = node
-
-            end
+            node.xMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber].xNeighbour = node
 
             return
         end
 
-    elseif direction == self.EDirections.Y then
+    elseif direction == self.EDirections.MINUSY then
 
-        if parentNode.yNeighbour ~= nil and parentNode.yNeighbour ~= 0 then
+        if parentNode.yMinusNeighbour ~= nil then
 
-            local neighbourNode = parentNode.yNeighbour
-            if #neighbourNode.children == 0 then
-                node.yNeighbour = parentNode.yNeighbour
+            local neighbourNode = parentNode.yMinusNeighbour
+            if neighbourNode.children == nil then
+                node.yMinusNeighbour = parentNode.yMinusNeighbour
                 return
             end
 
-             if childNumber == 5 then
-                node.yNeighbour = parentNode.yNeighbour.children[1]
-                neighbourNode.children[1].yMinusNeighbour = node
-
-            elseif childNumber == 6 then
-                node.yNeighbour = parentNode.yNeighbour.children[2]
-                neighbourNode.children[2].yMinusNeighbour = node
-
-            elseif childNumber == 7 then
-                node.yNeighbour = parentNode.yNeighbour.children[3]
-                neighbourNode.children[3].yMinusNeighbour = node
-
-            elseif childNumber == 8 then
-                node.yNeighbour = parentNode.yNeighbour.children[4]
-                neighbourNode.children[4].yMinusNeighbour = node
-
-            end
+            node.yMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber].yNeighbour = node
 
             return
         end
 
 
-    elseif direction == self.EDirections.Z then
+    elseif direction == self.EDirections.MINUSZ then
 
-        if parentNode.zNeighbour ~= nil and parentNode.zNeighbour ~= 0 then
+        if parentNode.zMinusNeighbour ~= nil then
 
-            local neighbourNode = parentNode.zNeighbour
-            if #neighbourNode.children == 0 then
-                node.zNeighbour = parentNode.zNeighbour
+            local neighbourNode = parentNode.zMinusNeighbour
+            if neighbourNode.children == nil then
+                node.zMinusNeighbour = parentNode.zMinusNeighbour
                 return
             end
 
-            if childNumber == 3 then
-                node.zNeighbour = parentNode.zNeighbour.children[1]
-                neighbourNode.children[1].zMinusNeighbour = node
-
-            elseif childNumber == 4 then
-                node.zNeighbour = parentNode.zNeighbour.children[2]
-                neighbourNode.children[2].zMinusNeighbour = node
-
-            elseif childNumber == 7 then
-                node.zNeighbour = parentNode.zNeighbour.children[5]
-                neighbourNode.children[5].zMinusNeighbour = node
-
-            elseif childNumber == 8 then
-                node.zNeighbour = parentNode.zNeighbour.children[6]
-                neighbourNode.children[6].zMinusNeighbour = node
-
-            end
+            node.zMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber].zNeighbour = node
 
             return
         end
 
     end
+
+
 
 end
 
 
 function BirdNavGridStateGenerate:voxelOverlapCheck(x,y,z, extentRadius)
     self.bTraceVoxelSolid = false
+
+    local terrainHeight = 0
+    if g_currentMission.terrainRootNode ~= nil then
+        terrainHeight = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode,x,y,z)
+    end
+
+    if y + extentRadius < terrainHeight then
+        return
+    end
+
+
     overlapBox(x,y,z,0,0,0,extentRadius,extentRadius,extentRadius,"voxelOverlapCheckCallback",self,self.collisionMask,false,true,true,false)
 end
 
 
 function BirdNavGridStateGenerate:voxelOverlapCheckCallback(hitObjectId)
 
-    if hitObjectId < 1 then
+    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode then
         return true
     end
 
-    if hitObjectId == g_currentMission.terrainRootNode or getHasClassId(hitObjectId,ClassIds.SHAPE) then
-        self.bTraceVoxelSolid = true
-        return false
+
+    if getHasClassId(hitObjectId,ClassIds.SHAPE) then
+        -- dirty hack to check if the shape is the boundary wall to ignore, as boundary wall would be extremely big, and most likely no building would be as big except at least water plane
+        local posX,posY,posZ,radius = getShapeBoundingSphere(hitObjectId)
+        local terrainSize = 2056
+        if g_currentMission.terrainRootNode ~= nil then
+            terrainSize = Utils.getNoNil(getTerrainSize(g_currentMission.terrainRootNode),self.owner.terrainSize)
+        end
+        if radius < terrainSize / 2.5 or bitAND(getCollisionMask(hitObjectId), CollisionFlag.WATER) == CollisionFlag.WATER then
+            self.bTraceVoxelSolid = true
+            return false
+        end
     end
 
     return true
@@ -478,71 +486,27 @@ end
 
 
 
-function BirdNavGridStateGenerate.quickSort(inTable,low,high)
-
-    if high <= low or #inTable < 1 then
-        return
-    end
-
-    local pivot = BirdNavGridStateGenerate.partition(inTable,low,high)
-    BirdNavGridStateGenerate.quickSort(inTable,low, pivot - 1)
-    BirdNavGridStateGenerate.quickSort(inTable, pivot + 1,high)
-
-end
-
-
-function BirdNavGridStateGenerate.partition(inTable,low,high)
-
-    local pivotValue = inTable[low]
-    local pivotIndex = low
-
-    local count = 0
-    for i = low + 1, high do
-
-        if inTable[i] <= pivotValue then
-            count = count + 1
-        end
-    end
-
-    pivotIndex = low + count
-
-    local temp = inTable[low]
-    inTable[low] = inTable[pivotIndex]
-    inTable[pivotIndex] = temp
-
-    local i , j = low, high
-
-    while i < pivotIndex and j > pivotIndex do
-
-        while inTable[i] <= pivotValue do
-            i = i + 1
-        end
-
-        while inTable[j] > pivotValue do
-            j = j - 1
-        end
-
-
-        if i < pivotIndex and j > pivotIndex then
-            local tempValue = inTable[i]
-            inTable[i] = inTable[j]
-            inTable[j] = tempValue
-            i = i + 1
-            j = j - 1
-
-        end
-
-    end
-
-	return pivotIndex;
-
-end
-
-
 --- GRID DEBUG STATE CLASS ---
 BirdNavGridStateDebug = {}
 BirdNavGridStateDebug_mt = Class(BirdNavGridStateDebug,BirdNavGridStateBase)
 InitObjectClass(BirdNavGridStateDebug, "BirdNavGridStateDebug")
+BirdNavGridStateDebug.currentDebugLayer = 2
+BirdNavGridStateDebug.maxDebugLayer = 9999
+
+function BirdNavGridStateDebug.increaseDebugLayer()
+
+    BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer + 1
+    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,2,BirdNavGridStateDebug.maxDebugLayer)
+    print("increased debug layer to: " .. tostring(BirdNavGridStateDebug.currentDebugLayer))
+end
+
+function BirdNavGridStateDebug.decreaseDebugLayer()
+
+    BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer - 1
+    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,2,BirdNavGridStateDebug.maxDebugLayer)
+    print("decreased debug layer to: " .. tostring(BirdNavGridStateDebug.currentDebugLayer))
+end
+
 
 function BirdNavGridStateDebug.new(customMt)
     local self = BirdNavGridStateDebug:superClass().new(customMt or BirdNavGridStateDebug_mt)
@@ -556,6 +520,16 @@ end
 function BirdNavGridStateDebug:enter()
     BirdNavGridStateDebug:superClass().enter(self)
 
+    if self == nil or self.owner == nil then
+        return
+    end
+
+    BirdNavGridStateDebug.maxDebugLayer = #self.owner.nodeTree
+    if g_inputBinding ~= nil then
+        local _, eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_DOWN, self, BirdNavGridStateDebug.decreaseDebugLayer, true, false, false, true, true, true)
+        local _, eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_UP, self, BirdNavGridStateDebug.increaseDebugLayer, true, false, false, true, true, true)
+    end
+
     if self.owner ~= nil then
         self.owner:raiseActive()
     end
@@ -565,6 +539,9 @@ end
 function BirdNavGridStateDebug:leave()
     BirdNavGridStateDebug:superClass().leave(self)
 
+    if g_inputBinding ~= nil then
+        g_inputBinding:removeActionEventsByTarget(self)
+    end
 end
 
 function BirdNavGridStateDebug:update(dt)
@@ -576,20 +553,24 @@ function BirdNavGridStateDebug:update(dt)
 
     self.owner:raiseActive()
 
+     -- -1 as layerIndex 1 is the root of octree
+    local currentDivision = math.pow(2,BirdNavGridStateDebug.currentDebugLayer - 1)
+    local voxelSize = self.owner.terrainSize / currentDivision
 
 
-
-
-
-    for _,voxel in pairs(self.owner.nodeTree[2]) do
-        DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, self.owner.terrainSize / 2, 1, 0, 0)
+    for _,voxel in pairs(self.owner.nodeTree[BirdNavGridStateDebug.currentDebugLayer]) do
+        if voxel.children ~= nil or voxel.leafVoxels ~= 0 then
+            DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
+        end
     end
-
-
 
 
 end
 
+function BirdNavGridStateDebug:destroy()
+    BirdNavGridStateDebug:superClass().destroy(self)
+
+end
 
 
 

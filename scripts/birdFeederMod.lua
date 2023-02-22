@@ -19,19 +19,20 @@ end
 
 function BirdFeederMod:deleteMap(savegame)
 
-    if BirdFeederMod.birdNavigation ~= nil then
+    if BirdFeederMod.birdNavigation ~= nil and not BirdFeederMod.birdNavigation.isDeleted then
         BirdFeederMod.birdNavigation:delete()
-        BirdFeederMod.birdNavigation = nil
     end
 
+    BirdFeederMod.birdNavigation = nil
 end
 
--- Hook after the farmlandmanager's loadmapdata, where the g_currentMission and g_currentMission.terrainNode will be valid
+-- Hook after the farmlandmanager's loadmapdata, where the g_currentMission and g_currentMission.terrainNode will be at least valid
 function BirdFeederMod:loadMapData(xmlFile)
 
     if g_server ~= nil or g_dedicatedServerInfo ~= nil then
-    BirdFeederMod.birdNavigation = BirdNavigationGrid.new()
-    BirdFeederMod.birdNavigation:register(true)
+        BirdFeederMod.birdNavigation = BirdNavigationGrid.new()
+        BirdFeederMod.birdNavigation:register(true)
+        addConsoleCommand( 'BirdFeederOctreeDebug', 'toggle debugging for octree', 'octreeDebugToggle', BirdFeederMod.birdNavigation)
     end
 
 end

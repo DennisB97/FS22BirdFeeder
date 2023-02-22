@@ -8,6 +8,8 @@
         <text name="function_birdFeeder" text="Platzierbarer Vogelhäuschen, denken Sie daran, Vogelfutter zu kaufen und zum Futterhäuschen zu tragen, und beobachten Sie, wie die Vögel kommen und fressen.">
         <text name="typeDesc_birdSeed" text="Futter für Vögel, fügen Sie dieses Futter in das Vogelhäuschen hinzu, das Sie bei den Placeables gekauft haben." />
         <text name="unit_gramShort" text="g" />
+        <text name="input_BIRDFEEDER_DBG_OCTREE_LAYER_DOWN" text="Lower octree debug layer" />
+        <text name="input_BIRDFEEDER_DBG_OCTREE_LAYER_UP" text="Increase octree debug layer" />
 	</texts>
 	</texts>
 </l10n>

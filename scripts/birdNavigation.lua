@@ -13,15 +13,14 @@ function BirdNavNode.new(x,y,z,parent)
     self.positionX = x
     self.positionY = y
     self.positionZ = z
-    -- all links 32/64 bits used, 4 bits layer index, 22bits node index, 6bit for highest resolution voxels if leaf node
     self.parent = parent
-    self.children = {}
-    self.xNeighbour = 0
-    self.xMinusNeighbour = 0
-    self.yNeighbour = 0
-    self.yMinusNeighbour = 0
-    self.zNeighbour = 0
-    self.zMinusNeighbour = 0
+    self.children = nil
+    self.xNeighbour = nil
+    self.xMinusNeighbour = nil
+    self.yNeighbour = nil
+    self.yMinusNeighbour = nil
+    self.zNeighbour = nil
+    self.zMinusNeighbour = nil
     self.leafVoxels = 0
     return self
 end
@@ -59,6 +58,7 @@ function BirdNavigationGrid.new(customMt)
     self.EBirdNavigationStates = {UNDEFINED = 0, PREPARE = 1, GENERATE = 2, DEBUG = 3, IDLE = 4}
     self.currentState = self.EBirdNavigationStates.UNDEFINED
     self.navGridStartLocation = {x = 0, y = 0, z = 0}
+    self.octreeDebug = false
 
     table.insert(self.birdNavigationStates,BirdNavGridStatePrepare.new())
     self.birdNavigationStates[self.EBirdNavigationStates.PREPARE]:init(self)
@@ -75,12 +75,26 @@ end
 
 
 function BirdNavigationGrid:delete()
+
+    self.isDeleted = true
+    if self.birdNavigationStates[self.currentState] ~= nil then
+        self.birdNavigationStates[self.currentState]:leave()
+    end
+
+    for _, state in pairs(self.birdNavigationStates) do
+
+        if state ~= nil then
+            state:destroy()
+        end
+
+    end
+
+    self.birdNavigationStates = nil
+    self.nodeTree = nil
+
     BirdNavigationGrid:superClass().delete(self)
 
-
-
     unregisterObjectClassName(self)
-
 end
 
 
@@ -101,7 +115,16 @@ function BirdNavigationGrid:changeState(newState)
     end
 
     self.currentState = newState
-    self.birdNavigationStates[self.currentState]:enter()
+
+    -- if debug is on then when returning to idle should set to debug state instead
+    if self.currentState == self.EBirdNavigationStates.IDLE and self.octreeDebug then
+        self.currentState = self.EBirdNavigationStates.DEBUG
+    end
+
+
+    if self.birdNavigationStates[self.currentState] ~= nil then
+        self.birdNavigationStates[self.currentState]:enter()
+    end
 
 
 end
@@ -112,6 +135,23 @@ function BirdNavigationGrid:update(dt)
 
     if self.birdNavigationStates[self.currentState] ~= nil then
          self.birdNavigationStates[self.currentState]:update(dt)
+    end
+
+
+end
+
+function BirdNavigationGrid:octreeDebugToggle()
+
+    if self == nil then
+        return
+    end
+
+    self.octreeDebug = not self.octreeDebug
+
+    if self.octreeDebug and self.currentState == self.EBirdNavigationStates.IDLE then
+        self:changeState(self.EBirdNavigationStates.DEBUG)
+    elseif not self.octreeDebug and self.currentState == self.EBirdNavigationStates.DEBUG then
+        self:changeState(self.EBirdNavigationStates.IDLE)
     end
 
 
