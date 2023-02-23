@@ -217,7 +217,6 @@ function BirdNavGridStateGenerate:doOctree()
     local currentNode = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
 
     if parentVoxelSize == self.owner.maxVoxelResolution * 4 then
-        print("parent voxel is 8m")
         self:createLeafVoxels(currentNode,parentVoxelSize)
     else
         self:createChildren(currentNode, parentVoxelSize)
@@ -241,13 +240,42 @@ end
 
 function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
 
-    parent.leafVoxels = -1
+    if self == nil or self.owner == nil then
+        return
+    end
+
+    parent.leafVoxels = 0
+
+    -- early check if no collision for whole leaf node then no 4x4x4 voxels need to be checked
+    self:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parentVoxelSize / 2)
+    if self.bTraceVoxelSolid == false then
+        return
+    end
 
 
+    local startPositionX = parent.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+    local startPositionY = parent.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+    local startPositionZ = parent.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
 
+    local count = 0
+    for y = 0, 3 do
+        for z = 0 , 3 do
+            for x = 0, 3 do
+                local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
+                local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
+                local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
+                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
 
+                if self.bTraceVoxelSolid == true then
+                    parent.leafVoxels = parent.leafVoxels + math.pow(2,count)
+--                 else
+--                     parent.leafVoxels = parent.leafVoxels - math.pow(2,count)
+                end
 
-
+                count = count + 1
+            end
+        end
+    end
 
 end
 
@@ -496,15 +524,16 @@ BirdNavGridStateDebug.maxDebugLayer = 9999
 function BirdNavGridStateDebug.increaseDebugLayer()
 
     BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer + 1
-    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,2,BirdNavGridStateDebug.maxDebugLayer)
-    print("increased debug layer to: " .. tostring(BirdNavGridStateDebug.currentDebugLayer))
+    -- max debug layer will be limited to octree's layers, but adding one more so that the leaf node's 64 voxels can also be shown at layer + 1
+    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,2,BirdNavGridStateDebug.maxDebugLayer + 1)
+
 end
 
 function BirdNavGridStateDebug.decreaseDebugLayer()
 
     BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer - 1
     BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,2,BirdNavGridStateDebug.maxDebugLayer)
-    print("decreased debug layer to: " .. tostring(BirdNavGridStateDebug.currentDebugLayer))
+
 end
 
 
@@ -512,7 +541,9 @@ function BirdNavGridStateDebug.new(customMt)
     local self = BirdNavGridStateDebug:superClass().new(customMt or BirdNavGridStateDebug_mt)
     self.debugGrid = {}
     self.playerLastLocation = { x = 0, y = 0, z = 0}
-
+    self.voxelMaxRenderDistance = 70
+    self.maxVoxelsAtTime = 70000
+    self.positionUpdated = false
 
     return self
 end
@@ -553,19 +584,156 @@ function BirdNavGridStateDebug:update(dt)
 
     self.owner:raiseActive()
 
-     -- -1 as layerIndex 1 is the root of octree
+    -- -1 as layerIndex 1 is the root of octree
     local currentDivision = math.pow(2,BirdNavGridStateDebug.currentDebugLayer - 1)
     local voxelSize = self.owner.terrainSize / currentDivision
 
+    self:updatePlayerDistance()
 
-    for _,voxel in pairs(self.owner.nodeTree[BirdNavGridStateDebug.currentDebugLayer]) do
-        if voxel.children ~= nil or voxel.leafVoxels ~= 0 then
-            DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
+    if BirdNavGridStateDebug.currentDebugLayer == #self.owner.nodeTree + 1 then
+
+        if self.positionUpdated then
+            self.positionUpdated = false
+            self:findCloseEnoughVoxels(self.owner.nodeTree[1][1],1,#self.owner.nodeTree)
+        end
+
+        for _,voxel in pairs(self.debugGrid) do
+
+            if voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0 then
+
+                local childNumber = 0
+                local startPositionX = voxel.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+                local startPositionY = voxel.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+                local startPositionZ = voxel.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+
+                for y = 0, 3 do
+                    for z = 0 , 3 do
+                        for x = 0, 3 do
+                            local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
+                            local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
+                            local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
+
+                            local bitState = math.floor(voxel.leafVoxels / (2^childNumber)) % 2
+                            if bitState ~= 0 then
+                                DebugUtil.drawSimpleDebugCube(currentPositionX, currentPositionY, currentPositionZ, self.owner.maxVoxelResolution, 1, 0, 0)
+                            end
+
+                            childNumber = childNumber + 1
+                        end
+                    end
+                end
+            end
+
+        end
+
+    elseif #self.owner.nodeTree[BirdNavGridStateDebug.currentDebugLayer] > self.maxVoxelsAtTime then
+
+        if self.positionUpdated then
+            self.positionUpdated = false
+            self:findCloseEnoughVoxels(self.owner.nodeTree[1][1],1,BirdNavGridStateDebug.currentDebugLayer)
+        end
+
+        for _,voxel in pairs(self.debugGrid) do
+            if voxel.children ~= nil or (voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0) then
+                DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
+            end
+        end
+
+
+    else
+         for _,voxel in pairs(self.owner.nodeTree[BirdNavGridStateDebug.currentDebugLayer]) do
+            if voxel.children ~= nil or (voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0) then
+                DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
+            end
         end
     end
 
 
 end
+
+function BirdNavGridStateDebug:updatePlayerDistance()
+
+    if self == nil or self.owner == nil then
+        return
+    end
+
+    local playerX,playerY,playerZ = getWorldTranslation(g_currentMission.player.rootNode)
+    local distance = BirdNavigationGrid.getVectorDistance(self.playerLastLocation.x,self.playerLastLocation.y,self.playerLastLocation.z,playerX,playerY,playerZ)
+    if distance > 50 then
+        self.positionUpdated = true
+        self.debugGrid = nil
+        self.debugGrid = {}
+        self.playerLastLocation.x = playerX
+        self.playerLastLocation.y = playerY
+        self.playerLastLocation.z = playerZ
+    end
+
+
+end
+
+function BirdNavGridStateDebug:findCloseEnoughVoxels(node,layer,maxLayer)
+
+    if self == nil or self.owner == nil then
+        return
+    end
+
+    -- -1 as layerIndex 1 is the root of octree
+    local currentDivision = math.pow(2,layer - 1)
+    local voxelSize = self.owner.terrainSize / currentDivision
+
+
+
+    if voxelSize == self.owner.maxVoxelResolution * 8 and node.children ~= nil then
+        self:appendDebugGrid(node.children)
+        return
+    elseif layer + 1 == maxLayer then
+        if node.children ~= nil then
+            self:appendDebugGrid(node.children)
+        end
+        return
+    elseif node.children == nil then
+        return
+    end
+
+
+    local aabbNode = {node.positionX - (voxelSize / 2), node.positionY - (voxelSize / 2), node.positionZ - (voxelSize / 2),node.positionX + (voxelSize / 2), node.positionY + (voxelSize / 2), node.positionZ + (voxelSize / 2) }
+    local aabbPlayer = {self.playerLastLocation.x - self.voxelMaxRenderDistance, self.playerLastLocation.y - self.voxelMaxRenderDistance, self.playerLastLocation.z - self.voxelMaxRenderDistance,self.playerLastLocation.x
+        + self.voxelMaxRenderDistance, self.playerLastLocation.y + self.voxelMaxRenderDistance, self.playerLastLocation.z + self.voxelMaxRenderDistance}
+
+    if BirdNavGridStateDebug.checkAABBIntersection(aabbNode,aabbPlayer) == true then
+
+        for _, voxel in pairs(node.children) do
+            self:findCloseEnoughVoxels(voxel,layer + 1)
+        end
+
+    end
+
+
+end
+
+function BirdNavGridStateDebug.checkAABBIntersection(aabb1, aabb2)
+
+
+  if aabb1[1] > aabb2[4] or aabb2[1] > aabb1[4] or aabb1[2] > aabb2[5] or aabb2[2] > aabb1[5] or aabb1[3] > aabb2[6] or aabb2[3] > aabb1[6] then
+    return false
+  else
+    return true
+  end
+end
+
+
+function BirdNavGridStateDebug:appendDebugGrid(nodes)
+
+    if self == nil then
+        return
+    end
+
+    for _,voxel in pairs(nodes) do
+        table.insert(self.debugGrid,voxel)
+    end
+
+end
+
 
 function BirdNavGridStateDebug:destroy()
     BirdNavGridStateDebug:superClass().destroy(self)

@@ -21,7 +21,7 @@ function BirdNavNode.new(x,y,z,parent)
     self.yMinusNeighbour = nil
     self.zNeighbour = nil
     self.zMinusNeighbour = nil
-    self.leafVoxels = 0
+    self.leafVoxels = nil
     return self
 end
 
@@ -95,6 +95,10 @@ function BirdNavigationGrid:delete()
     BirdNavigationGrid:superClass().delete(self)
 
     unregisterObjectClassName(self)
+end
+
+function BirdNavigationGrid.getVectorDistance(x,y,z,x2,y2,z2)
+    return math.sqrt(math.pow((x - x2),2) + math.pow((y - y2),2) + math.pow((z - z2),2))
 end
 
 
