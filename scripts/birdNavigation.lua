@@ -21,10 +21,22 @@ function BirdNavNode.new(x,y,z,parent)
     self.yMinusNeighbour = nil
     self.zNeighbour = nil
     self.zMinusNeighbour = nil
-    self.leafVoxels = nil
+    self.leafVoxelsBottom = nil
+    self.leafVoxelsTop = nil
     return self
 end
 
+function BirdNavNode.isSolidLeaf(node)
+
+    if node.children == nil then
+
+        if node.leafVoxelsBottom ~= nil and node.leafVoxelsBottom ~= 0 or node.leafVoxelsTop ~= nil and node.leafVoxelsTop ~= 0 then
+            return true
+        end
+    end
+
+    return false
+end
 
 
 function BirdNavigationGrid:addNode(layerIndex,node)

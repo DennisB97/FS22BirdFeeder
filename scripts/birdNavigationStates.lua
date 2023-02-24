@@ -117,8 +117,7 @@ function BirdNavGridStateGenerate.new(customMt)
     self.currentLoops = 0
     self.currentLayerIndex = 1
     self.currentNodeIndex = 1
-    self.currentChildIndex = 0
-    self.startLocation = {}
+    self.generationTime = 0
     self.EInternalState = {UNDEFINED = -1 ,CREATE = 0, IDLE = 1}
     self.currentState = self.EInternalState.CREATE
     self.EDirections = {X = 0, MINUSX = 1, Y = 2, MINUSY = 3, Z = 4, MINUSZ = 5}
@@ -168,6 +167,8 @@ function BirdNavGridStateGenerate:update(dt)
 
     end
 
+    self.generationTime = self.generationTime + (dt / 1000)
+
 
     local currentLoops = 0
     local currentFPS = 1 / (dt / 1000)
@@ -185,7 +186,9 @@ function BirdNavGridStateGenerate:update(dt)
         if self.currentState == self.EInternalState.CREATE then
 
             if self:doOctree() == true then
-                Logging.info("BirdNavGridStateGenerate done generating octree!")
+                local minutes = math.floor(self.generationTime / 60)
+                local seconds = self.generationTime % 60
+                Logging.info(string.format("BirdNavGridStateGenerate done generating octree! Took around %d Minutes, %d Seconds",minutes,seconds))
                 self.currentState = self.EInternalState.IDLE
                 self.owner:changeState(self.owner.EBirdNavigationStates.IDLE)
             end
@@ -244,7 +247,8 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
         return
     end
 
-    parent.leafVoxels = 0
+    parent.leafVoxelsBottom = 0
+    parent.leafVoxelsTop = 0
 
     -- early check if no collision for whole leaf node then no 4x4x4 voxels need to be checked
     self:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parentVoxelSize / 2)
@@ -256,9 +260,27 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
     local startPositionX = parent.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
     local startPositionY = parent.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
     local startPositionZ = parent.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+--
+--     local count = 0
+--     for y = 0, 3 do
+--         for z = 0 , 3 do
+--             for x = 0, 3 do
+--                 local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
+--                 local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
+--                 local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
+--                 self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
+--
+--                 if self.bTraceVoxelSolid == true then
+--                     parent.leafVoxels = parent.leafVoxels + math.pow(2,count)
+--                 end
+--
+--                 count = count + 1
+--             end
+--         end
+--     end
 
     local count = 0
-    for y = 0, 3 do
+    for y = 0, 1 do
         for z = 0 , 3 do
             for x = 0, 3 do
                 local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
@@ -267,9 +289,7 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
                 self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
 
                 if self.bTraceVoxelSolid == true then
-                    parent.leafVoxels = parent.leafVoxels + math.pow(2,count)
---                 else
---                     parent.leafVoxels = parent.leafVoxels - math.pow(2,count)
+                    parent.leafVoxelsBottom = bitOR(parent.leafVoxelsBottom,( 1 * 2^count))
                 end
 
                 count = count + 1
@@ -277,7 +297,28 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
         end
     end
 
+
+    count = 0
+    for y = 2, 3 do
+        for z = 0 , 3 do
+            for x = 0, 3 do
+                local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
+                local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
+                local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
+                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
+
+                if self.bTraceVoxelSolid == true then
+                    parent.leafVoxelsTop = bitOR(parent.leafVoxelsTop,( 1 * 2^count))
+                end
+
+                count = count + 1
+
+            end
+        end
+    end
+
 end
+
 
 function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
 
@@ -544,6 +585,7 @@ function BirdNavGridStateDebug.new(customMt)
     self.voxelMaxRenderDistance = 70
     self.maxVoxelsAtTime = 70000
     self.positionUpdated = false
+    self.lastNode = {x = 0, y = 0, z = 0}
 
     return self
 end
@@ -588,8 +630,13 @@ function BirdNavGridStateDebug:update(dt)
     local currentDivision = math.pow(2,BirdNavGridStateDebug.currentDebugLayer - 1)
     local voxelSize = self.owner.terrainSize / currentDivision
 
+    if BirdNavGridStateDebug.currentDebugLayer == #self.owner.nodeTree then
+        self:debugSingleLeafNode(self.owner.nodeTree[1][1],1)
+    end
+
     self:updatePlayerDistance()
 
+    -- if layer is beyond the leaf layer means want to show the leaf nodes highest resolution 64 voxels
     if BirdNavGridStateDebug.currentDebugLayer == #self.owner.nodeTree + 1 then
 
         if self.positionUpdated then
@@ -599,21 +646,21 @@ function BirdNavGridStateDebug:update(dt)
 
         for _,voxel in pairs(self.debugGrid) do
 
-            if voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0 then
+            if BirdNavNode.isSolidLeaf(voxel) then
 
                 local childNumber = 0
                 local startPositionX = voxel.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
                 local startPositionY = voxel.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
                 local startPositionZ = voxel.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
 
-                for y = 0, 3 do
+                for y = 0, 1 do
                     for z = 0 , 3 do
                         for x = 0, 3 do
                             local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
                             local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
                             local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
 
-                            local bitState = math.floor(voxel.leafVoxels / (2^childNumber)) % 2
+                            local bitState = bitAND(math.floor(voxel.leafVoxelsBottom / (math.pow(2,childNumber))), 1)
                             if bitState ~= 0 then
                                 DebugUtil.drawSimpleDebugCube(currentPositionX, currentPositionY, currentPositionZ, self.owner.maxVoxelResolution, 1, 0, 0)
                             end
@@ -622,6 +669,25 @@ function BirdNavGridStateDebug:update(dt)
                         end
                     end
                 end
+
+                childNumber = 0
+                for y = 2, 3 do
+                    for z = 0 , 3 do
+                        for x = 0, 3 do
+                            local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
+                            local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
+                            local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
+
+                            local bitState = bitAND(math.floor(voxel.leafVoxelsTop / (math.pow(2,childNumber))), 1)
+                            if bitState ~= 0 then
+                                DebugUtil.drawSimpleDebugCube(currentPositionX, currentPositionY, currentPositionZ, self.owner.maxVoxelResolution, 1, 0, 0)
+                            end
+
+                            childNumber = childNumber + 1
+                        end
+                    end
+                end
+
             end
 
         end
@@ -634,7 +700,7 @@ function BirdNavGridStateDebug:update(dt)
         end
 
         for _,voxel in pairs(self.debugGrid) do
-            if voxel.children ~= nil or (voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0) then
+            if voxel.children ~= nil or BirdNavNode.isSolidLeaf(voxel) then
                 DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
             end
         end
@@ -642,7 +708,7 @@ function BirdNavGridStateDebug:update(dt)
 
     else
          for _,voxel in pairs(self.owner.nodeTree[BirdNavGridStateDebug.currentDebugLayer]) do
-            if voxel.children ~= nil or (voxel.leafVoxels ~= nil and voxel.leafVoxels ~= 0) then
+            if voxel.children ~= nil or BirdNavNode.isSolidLeaf(voxel) then
                 DebugUtil.drawSimpleDebugCube(voxel.positionX, voxel.positionY, voxel.positionZ, voxelSize, 1, 0, 0)
             end
         end
@@ -650,6 +716,51 @@ function BirdNavGridStateDebug:update(dt)
 
 
 end
+
+function BirdNavGridStateDebug:debugSingleLeafNode(node,layer)
+
+    if self == nil or self.owner == nil then
+        return
+    end
+
+
+    -- -1 as layerIndex 1 is the root of octree
+    local currentDivision = math.pow(2,layer - 1)
+    local voxelSize = self.owner.terrainSize / currentDivision
+
+
+    local playerX,playerY,playerZ = getWorldTranslation(g_currentMission.player.rootNode)
+
+    local aabbNode = {node.positionX - (voxelSize / 2), node.positionY - (voxelSize / 2), node.positionZ - (voxelSize / 2),node.positionX + (voxelSize / 2), node.positionY + (voxelSize / 2), node.positionZ + (voxelSize / 2) }
+
+     if BirdNavGridStateDebug.checkPointInAABB(playerX,playerY,playerZ,aabbNode) == true then
+
+        if voxelSize == self.owner.maxVoxelResolution * 4 then
+            if node.positionX ~= self.lastNode.x or node.positionY ~= self.lastNode.y or node.positionZ ~= self.lastNode.z then
+                self.lastNode.x = node.positionX
+                self.lastNode.y = node.positionY
+                self.lastNode.z = node.positionZ
+
+                if BirdNavNode.isSolidLeaf(node) then
+                    print("current node's leaf voxels bottom are : " .. tostring(node.leafVoxelsBottom))
+                    print("current node's leaf voxels top are : " .. tostring(node.leafVoxelsTop))
+                end
+            end
+            return
+        elseif node.children == nil then
+            return
+        end
+
+        for _, voxel in pairs(node.children) do
+            self:debugSingleLeafNode(voxel,layer + 1)
+        end
+
+    end
+
+
+
+end
+
 
 function BirdNavGridStateDebug:updatePlayerDistance()
 
@@ -720,6 +831,16 @@ function BirdNavGridStateDebug.checkAABBIntersection(aabb1, aabb2)
     return true
   end
 end
+
+
+function BirdNavGridStateDebug.checkPointInAABB(px, py, pz, aabb)
+    if px >= aabb[1] and px <= aabb[4] and py >= aabb[2] and py <= aabb[5] and pz >= aabb[3] and pz <= aabb[6] then
+        return true
+    else
+        return false
+    end
+end
+
 
 
 function BirdNavGridStateDebug:appendDebugGrid(nodes)

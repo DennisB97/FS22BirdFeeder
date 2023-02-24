@@ -15,8 +15,6 @@ function BirdFeederMod:loadMap(savegame)
 
 end
 
-
-
 function BirdFeederMod:deleteMap(savegame)
 
     if BirdFeederMod.birdNavigation ~= nil and not BirdFeederMod.birdNavigation.isDeleted then
@@ -29,6 +27,7 @@ end
 -- Hook after the farmlandmanager's loadmapdata, where the g_currentMission and g_currentMission.terrainNode will be at least valid
 function BirdFeederMod:loadMapData(xmlFile)
 
+    -- for now create on server only the navigation grid
     if g_server ~= nil or g_dedicatedServerInfo ~= nil then
         BirdFeederMod.birdNavigation = BirdNavigationGrid.new()
         BirdFeederMod.birdNavigation:register(true)
@@ -59,4 +58,3 @@ end
 
 TypeManager.finalizeTypes = Utils.prependedFunction(TypeManager.finalizeTypes, BirdFeederMod.register)
 
-addModEventListener(BirdFeederMod)
