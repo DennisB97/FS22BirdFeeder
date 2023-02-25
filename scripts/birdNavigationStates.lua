@@ -40,6 +40,7 @@ InitObjectClass(BirdNavGridStatePrepare, "BirdNavGridStatePrepare")
 
 function BirdNavGridStatePrepare.new(customMt)
     local self = BirdNavGridStatePrepare:superClass().new(customMt or BirdNavGridStatePrepare_mt)
+    self.seenIDs = {}
 
     return self
 end
@@ -49,10 +50,14 @@ function BirdNavGridStatePrepare:enter()
 
     self:prepareGrid()
 
-    if self.owner ~= nil then
-        self.owner:changeState(self.owner.EBirdNavigationStates.GENERATE)
-    end
+    self:findBoundaries()
+
+    DebugUtil.printTableRecursively(self.owner.mapBoundaryIDs)
+
+    self.owner:changeState(self.owner.EBirdNavigationStates.GENERATE)
+
 end
+
 
 function BirdNavGridStatePrepare:leave()
     BirdNavGridStatePrepare:superClass().leave(self)
@@ -61,7 +66,6 @@ end
 
 function BirdNavGridStatePrepare:update(dt)
     BirdNavGridStatePrepare:superClass().update(self,dt)
-
 end
 
 
@@ -99,6 +103,55 @@ function BirdNavGridStatePrepare:destroy()
 end
 
 
+function BirdNavGridStatePrepare:findBoundaries()
+
+    local minX,maxX,minZ,maxZ = 0 - self.owner.terrainSize / 2, 0 + self.owner.terrainSize / 2, 0 - self.owner.terrainSize / 2, 0 + self.owner.terrainSize / 2
+    local extentX,extentY,extentZ = self.owner.terrainSize / 8, self.owner.terrainSize / 2, self.owner.terrainSize / 8
+
+    --                          Corner     Middle edge        Corner
+    self:boundaryOverlapCheck(minX,0,minZ,  0,0,minZ,         maxX,0,minZ, extentX,extentY,extentZ)
+
+    --                          Corner     Middle edge        Corner
+    self:boundaryOverlapCheck(minX,0,maxZ,  0,0,maxZ,         maxX,0,maxZ, extentX,extentY,extentZ)
+
+    --                          Corner     Middle edge        Corner
+    self:boundaryOverlapCheck(minX,0,minZ,  minX,0,0,         minX,0,maxZ, extentX,extentY,extentZ)
+
+    --                          Corner     Middle edge        Corner
+    self:boundaryOverlapCheck(maxX,0,minZ,  maxX,0,0,         maxX,0,maxZ, extentX,extentY,extentZ)
+
+
+end
+
+
+function BirdNavGridStatePrepare:boundaryOverlapCheck(x,y,z,x2,y2,z2,x3,y3,z3, extentX,extentY,extentZ)
+
+    overlapBox(x,y,z,0,0,0,extentX,extentY,extentZ,"boundaryOverlapCheckCallback",self,CollisionFlag.STATIC_WORLD,false,true,true,false)
+    overlapBox(x2,y2,z2,0,0,0,extentX,extentY,extentZ,"boundaryOverlapCheckCallback",self,CollisionFlag.STATIC_WORLD,false,true,true,false)
+    overlapBox(x3,y3,z3,0,0,0,extentX,extentY,extentZ,"boundaryOverlapCheckCallback",self,CollisionFlag.STATIC_WORLD,false,true,true,false)
+    self.seenIDs = nil
+    self.seenIDs = {}
+end
+
+
+function BirdNavGridStatePrepare:boundaryOverlapCheckCallback(hitObjectId)
+
+    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode then
+        return true
+    end
+
+    if getHasClassId(hitObjectId,ClassIds.SHAPE) then
+        if self.seenIDs[hitObjectId] then
+            self.owner.mapBoundaryIDs[hitObjectId] = true
+        else
+            self.seenIDs[hitObjectId] = true
+        end
+    end
+
+    return true
+end
+
+
 
 --- GRID GENERATE STATE CLASS ---
 BirdNavGridStateGenerate = {}
@@ -110,18 +163,33 @@ function BirdNavGridStateGenerate.new(customMt)
 
     self.collisionMask = CollisionFlag.STATIC_WORLD + CollisionFlag.WATER
     self.bTraceVoxelSolid = true
-    self.dynamicLoopLimit = 50
-    self.dynamicLoopRemove = 10
-    self.dynamicLoopAdd = 5
+    self.dynamicLoopLimit = 1
+    self.dynamicLoopRemove = 2
+    self.dynamicLoopAdd = 1
     self.targetFPS = 0
     self.currentLoops = 0
     self.currentLayerIndex = 1
     self.currentNodeIndex = 1
     self.generationTime = 0
-    self.EInternalState = {UNDEFINED = -1 ,CREATE = 0, IDLE = 1}
-    self.currentState = self.EInternalState.CREATE
-    self.EDirections = {X = 0, MINUSX = 1, Y = 2, MINUSY = 3, Z = 4, MINUSZ = 5}
+    self.EInternalState = {UNDEFINED = -1 , GETFPS = 0 ,CREATE = 1, IDLE = 2}
+    self.currentState = self.EInternalState.GETFPS
+    self.fiveSecondFPSLog = {}
+    self.FPSLogAmount = 5
 
+    ------- Variables used by generation to allocate once ------------
+    self.currentDivision = 0
+    self.parentVoxelSize = 0
+    self.startPositionX = 0
+    self.startPositionY = 0
+    self.startPositionZ = 0
+    self.currentPositionX = 0
+    self.currentPositionY = 0
+    self.currentPositionZ = 0
+    self.count = 0
+    self.currentLoops = 0
+    self.currentFPS = 0
+    self.terrainHeight = 0
+    self.radius = 0
 
     return self
 end
@@ -152,36 +220,48 @@ end
 function BirdNavGridStateGenerate:update(dt)
     BirdNavGridStateGenerate:superClass().update(self,dt)
 
-    if self.targetFPS == 0 then
-        self.targetFPS = 1 / (dt / 1000)
+    if self ~= nil and self.owner ~= nil then
+        self.owner:raiseActive()
+    end
 
-        if g_gameSettings.frameLimit > 0 and self.targetFPS > g_gameSettings.frameLimit then
-            self.targetFPS = g_gameSettings.frameLimit - 1
-        else
-            if self.targetFPS > 60 then
-                self.targetFPS = 59
-            elseif self.targetFPS < 30 then
-                self.targetFPS = 29
+    if self.currentState == self.EInternalState.GETFPS then
+
+        self.generationTime = self.generationTime + (dt / 1000)
+
+        if self.generationTime >= 1 then
+            self.generationTime = 0
+            table.insert(self.fiveSecondFPSLog,1 / (dt / 1000))
+            if #self.fiveSecondFPSLog == self.FPSLogAmount then
+
+                self.targetFPS = (self.fiveSecondFPSLog[1] + self.fiveSecondFPSLog[2] + self.fiveSecondFPSLog[3] + self.fiveSecondFPSLog[4] + self.fiveSecondFPSLog[5]) / self.FPSLogAmount
+
+                if g_gameSettings.frameLimit > 0 and self.targetFPS >= g_gameSettings.frameLimit then
+                    self.targetFPS = g_gameSettings.frameLimit - 1
+                else
+                    if self.targetFPS > 60 then
+                        self.targetFPS = 59
+                    elseif self.targetFPS < 30 then
+                        self.targetFPS = 29
+                    else
+                        self.targetFPS = self.targetFPS - 1
+                    end
+                end
+                Logging.info(string.format("Target FPS to keep while generating BirdFeeder Nav is: %d",self.targetFPS))
+                self.fiveSecondFPSLog = nil
+                self.currentState = self.EInternalState.CREATE
+                return
             end
         end
 
+        return
     end
+
 
     self.generationTime = self.generationTime + (dt / 1000)
 
+    self.currentLoops = 0
 
-    local currentLoops = 0
-    local currentFPS = 1 / (dt / 1000)
-
-    if self.dynamicLoopLimit > 0 + self.dynamicLoopRemove and currentFPS < self.targetFPS  then
-        self.dynamicLoopLimit = self.dynamicLoopLimit - self.dynamicLoopRemove
-    elseif currentFPS > self.targetFPS then
-        self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
-    elseif self.dynamicLoopLimit < 1 then
-        self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
-    end
-
-    while currentLoops < self.dynamicLoopLimit do
+    while self.currentLoops < self.dynamicLoopLimit do
 
         if self.currentState == self.EInternalState.CREATE then
 
@@ -196,11 +276,17 @@ function BirdNavGridStateGenerate:update(dt)
         end
 
 
-        currentLoops = currentLoops + 1
+        self.currentLoops = self.currentLoops + 1
     end
 
-    if self ~= nil and self.owner ~= nil then
-        self.owner:raiseActive()
+    self.currentFPS = 1 / (dt / 1000)
+
+    if self.dynamicLoopLimit > 0 + self.dynamicLoopRemove and self.currentFPS < self.targetFPS  then
+        self.dynamicLoopLimit = self.dynamicLoopLimit - self.dynamicLoopRemove
+    elseif self.currentFPS > self.targetFPS then
+        self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
+    elseif self.dynamicLoopLimit < 1 then
+        self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
     end
 
 
@@ -209,26 +295,27 @@ end
 function BirdNavGridStateGenerate:doOctree()
 
     -- -1 as layerIndex 1 is the root of octree
-    local currentDivision = math.pow(2,self.currentLayerIndex - 1)
-    local parentVoxelSize = self.owner.terrainSize / currentDivision
+    self.currentDivision = math.pow(2,self.currentLayerIndex - 1)
+    self.parentVoxelSize = self.owner.terrainSize / self.currentDivision
 
      -- if current layer is lower resolution than the leaf nodes should be then octree is done
-    if parentVoxelSize < self.owner.maxVoxelResolution * 4 then
+    if self.parentVoxelSize < self.owner.maxVoxelResolution * 4 then
         return true
     end
 
     local currentNode = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
 
-    if parentVoxelSize == self.owner.maxVoxelResolution * 4 then
-        self:createLeafVoxels(currentNode,parentVoxelSize)
+    if self.parentVoxelSize == self.owner.maxVoxelResolution * 4 then
+        self:createLeafVoxels(currentNode,self.parentVoxelSize)
     else
-        self:createChildren(currentNode, parentVoxelSize)
+        self:createChildren(currentNode, self.parentVoxelSize)
     end
 
     -- If all nodes for the parents have been added then next layer
     if self:incrementNodeGeneration() == true then
 
         self.currentLayerIndex = self.currentLayerIndex + 1
+
         -- If no new layers means reached the final resolution so it is done
         if self.owner.nodeTree[self.currentLayerIndex] == nil then
             return true
@@ -247,6 +334,7 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
         return
     end
 
+
     parent.leafVoxelsBottom = 0
     parent.leafVoxelsTop = 0
 
@@ -257,61 +345,43 @@ function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
     end
 
 
-    local startPositionX = parent.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
-    local startPositionY = parent.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
-    local startPositionZ = parent.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
---
---     local count = 0
---     for y = 0, 3 do
---         for z = 0 , 3 do
---             for x = 0, 3 do
---                 local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
---                 local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
---                 local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
---                 self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
---
---                 if self.bTraceVoxelSolid == true then
---                     parent.leafVoxels = parent.leafVoxels + math.pow(2,count)
---                 end
---
---                 count = count + 1
---             end
---         end
---     end
+    self.startPositionX = parent.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+    self.startPositionY = parent.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
+    self.startPositionZ = parent.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
 
-    local count = 0
+    self.count = 0
     for y = 0, 1 do
         for z = 0 , 3 do
             for x = 0, 3 do
-                local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
-                local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
-                local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
-                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
+                self.currentPositionX = self.startPositionX + (self.owner.maxVoxelResolution * x)
+                self.currentPositionY = self.startPositionY + (self.owner.maxVoxelResolution * y)
+                self.currentPositionZ = self.startPositionZ + (self.owner.maxVoxelResolution * z)
+                self:voxelOverlapCheck(self.currentPositionX,self.currentPositionY,self.currentPositionZ,self.owner.maxVoxelResolution / 2)
 
                 if self.bTraceVoxelSolid == true then
-                    parent.leafVoxelsBottom = bitOR(parent.leafVoxelsBottom,( 1 * 2^count))
+                    parent.leafVoxelsBottom = bitOR(parent.leafVoxelsBottom,( 1 * 2^self.count))
                 end
 
-                count = count + 1
+                self.count = self.count + 1
             end
         end
     end
 
 
-    count = 0
+    self.count = 0
     for y = 2, 3 do
         for z = 0 , 3 do
             for x = 0, 3 do
-                local currentPositionX = startPositionX + (self.owner.maxVoxelResolution * x)
-                local currentPositionY = startPositionY + (self.owner.maxVoxelResolution * y)
-                local currentPositionZ = startPositionZ + (self.owner.maxVoxelResolution * z)
-                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.owner.maxVoxelResolution / 2)
+                self.currentPositionX = self.startPositionX + (self.owner.maxVoxelResolution * x)
+                self.currentPositionY = self.startPositionY + (self.owner.maxVoxelResolution * y)
+                self.currentPositionZ = self.startPositionZ + (self.owner.maxVoxelResolution * z)
+                self:voxelOverlapCheck(self.currentPositionX,self.currentPositionY,self.currentPositionZ,self.owner.maxVoxelResolution / 2)
 
                 if self.bTraceVoxelSolid == true then
-                    parent.leafVoxelsTop = bitOR(parent.leafVoxelsTop,( 1 * 2^count))
+                    parent.leafVoxelsTop = bitOR(parent.leafVoxelsTop,( 1 * 2^self.count))
                 end
 
-                count = count + 1
+                self.count = self.count + 1
 
             end
         end
@@ -333,20 +403,20 @@ function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
     end
 
     -- divided by 4 to get the new child voxels radius to offset inside the parent node
-    local startLocationX = parent.positionX - (parentVoxelSize / 4)
-    local startLocationY = parent.positionY - (parentVoxelSize / 4)
-    local startLocationZ = parent.positionZ - (parentVoxelSize / 4)
+    self.startLocationX = parent.positionX - (parentVoxelSize / 4)
+    self.startLocationY = parent.positionY - (parentVoxelSize / 4)
+    self.startLocationZ = parent.positionZ - (parentVoxelSize / 4)
 
-    local childNumber = 1
+    self.count = 1
     parent.children = {}
     for y = 0, 1 do
         for z = 0 , 1 do
             for x = 0, 1 do
-                local newNode = BirdNavNode.new(startLocationX + (x * (parentVoxelSize / 2)) ,startLocationY + (y * (parentVoxelSize / 2)), startLocationZ + (z * (parentVoxelSize / 2)),parent)
+                local newNode = BirdNavNode.new(self.startLocationX + (x * (parentVoxelSize / 2)) ,self.startLocationY + (y * (parentVoxelSize / 2)), self.startLocationZ + (z * (parentVoxelSize / 2)),parent)
                 self.owner:addNode(self.currentLayerIndex + 1,newNode)
                 table.insert(parent.children,newNode)
-                self:findNeighbours(newNode,childNumber)
-                childNumber = childNumber + 1
+                self:findNeighbours(newNode,self.count)
+                self.count = self.count + 1
             end
         end
     end
@@ -377,27 +447,28 @@ function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
 
     if node == nil or childNumber < 1 or childNumber > 8 then
         return
+
     end
 
 
     if childNumber == 1 then
-        self:findOutsideNeighbours(2,self.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(3,self.EDirections.MINUSZ,node)
-        self:findOutsideNeighbours(5,self.EDirections.MINUSY,node)
+        self:findOutsideNeighbours(2,self.owner.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(3,self.owner.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(5,self.owner.EDirections.MINUSY,node)
 
     elseif childNumber == 2 then
         node.xMinusNeighbour = node.parent.children[1]
         node.parent.children[1].xNeighbour = node
 
-        self:findOutsideNeighbours(4,self.EDirections.MINUSZ,node)
-        self:findOutsideNeighbours(6,self.EDirections.MINUSY,node)
+        self:findOutsideNeighbours(4,self.owner.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(6,self.owner.EDirections.MINUSY,node)
 
     elseif childNumber == 3 then
         node.zMinusNeighbour = node.parent.children[1]
         node.parent.children[1].zNeighbour = node
 
-        self:findOutsideNeighbours(4,self.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(7,self.EDirections.MINUSY,node)
+        self:findOutsideNeighbours(4,self.owner.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(7,self.owner.EDirections.MINUSY,node)
 
     elseif childNumber == 4 then
         node.zMinusNeighbour = node.parent.children[2]
@@ -406,7 +477,7 @@ function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
         node.xMinusNeighbour = node.parent.children[3]
         node.parent.children[3].xNeighbour = node
 
-        self:findOutsideNeighbours(8,self.EDirections.MINUSY,node)
+        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSY,node)
 
 
 
@@ -414,8 +485,8 @@ function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
         node.yMinusNeighbour = node.parent.children[1]
         node.parent.children[1].yNeighbour = node
 
-        self:findOutsideNeighbours(6,self.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(7,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(6,self.owner.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(7,self.owner.EDirections.MINUSZ,node)
 
     elseif childNumber == 6 then
         node.yMinusNeighbour = node.parent.children[2]
@@ -424,7 +495,7 @@ function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
         node.xMinusNeighbour = node.parent.children[5]
         node.parent.children[5].xNeighbour = node
 
-        self:findOutsideNeighbours(8,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSZ,node)
 
     elseif childNumber == 7 then
         node.yMinusNeighbour = node.parent.children[3]
@@ -434,7 +505,7 @@ function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
         node.parent.children[5].zNeighbour = node
 
 
-        self:findOutsideNeighbours(8,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSX,node)
 
     elseif childNumber == 8 then
         node.yMinusNeighbour = node.parent.children[4]
@@ -457,7 +528,7 @@ function BirdNavGridStateGenerate:findOutsideNeighbours(neighbourChildNumber,dir
 
     local parentNode = node.parent
 
-    if direction ==  self.EDirections.MINUSX then
+    if direction ==  self.owner.EDirections.MINUSX then
 
         if parentNode.xMinusNeighbour ~= nil then
 
@@ -473,7 +544,7 @@ function BirdNavGridStateGenerate:findOutsideNeighbours(neighbourChildNumber,dir
             return
         end
 
-    elseif direction == self.EDirections.MINUSY then
+    elseif direction == self.owner.EDirections.MINUSY then
 
         if parentNode.yMinusNeighbour ~= nil then
 
@@ -490,7 +561,7 @@ function BirdNavGridStateGenerate:findOutsideNeighbours(neighbourChildNumber,dir
         end
 
 
-    elseif direction == self.EDirections.MINUSZ then
+    elseif direction == self.owner.EDirections.MINUSZ then
 
         if parentNode.zMinusNeighbour ~= nil then
 
@@ -516,38 +587,32 @@ end
 function BirdNavGridStateGenerate:voxelOverlapCheck(x,y,z, extentRadius)
     self.bTraceVoxelSolid = false
 
-    local terrainHeight = 0
+    self.terrainHeight = 0
     if g_currentMission.terrainRootNode ~= nil then
-        terrainHeight = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode,x,y,z)
+        self.terrainHeight = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode,x,y,z)
     end
 
-    if y + extentRadius < terrainHeight then
+    if y + extentRadius < self.terrainHeight then
         return
     end
 
 
     overlapBox(x,y,z,0,0,0,extentRadius,extentRadius,extentRadius,"voxelOverlapCheckCallback",self,self.collisionMask,false,true,true,false)
+
 end
 
 
 function BirdNavGridStateGenerate:voxelOverlapCheckCallback(hitObjectId)
 
-    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode then
+    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode or self.owner.mapBoundaryIDs[hitObjectId] then
         return true
     end
 
 
     if getHasClassId(hitObjectId,ClassIds.SHAPE) then
-        -- dirty hack to check if the shape is the boundary wall to ignore, as boundary wall would be extremely big, and most likely no building would be as big except at least water plane
-        local posX,posY,posZ,radius = getShapeBoundingSphere(hitObjectId)
-        local terrainSize = 2056
-        if g_currentMission.terrainRootNode ~= nil then
-            terrainSize = Utils.getNoNil(getTerrainSize(g_currentMission.terrainRootNode),self.owner.terrainSize)
-        end
-        if radius < terrainSize / 2.5 or bitAND(getCollisionMask(hitObjectId), CollisionFlag.WATER) == CollisionFlag.WATER then
-            self.bTraceVoxelSolid = true
-            return false
-        end
+        self.bTraceVoxelSolid = true
+        return false
+
     end
 
     return true

@@ -68,9 +68,11 @@ function BirdNavigationGrid.new(customMt)
     self.maxVoxelResolution = 2 -- in meters
     self.birdNavigationStates = {}
     self.EBirdNavigationStates = {UNDEFINED = 0, PREPARE = 1, GENERATE = 2, DEBUG = 3, IDLE = 4}
+    self.EDirections = {X = 0, MINUSX = 1, Y = 2, MINUSY = 3, Z = 4, MINUSZ = 5}
     self.currentState = self.EBirdNavigationStates.UNDEFINED
     self.navGridStartLocation = {x = 0, y = 0, z = 0}
     self.octreeDebug = false
+    self.mapBoundaryIDs = {}
 
     table.insert(self.birdNavigationStates,BirdNavGridStatePrepare.new())
     self.birdNavigationStates[self.EBirdNavigationStates.PREPARE]:init(self)
