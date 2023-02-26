@@ -8,11 +8,12 @@ InitObjectClass(BirdNavigationGrid, "BirdNavigationGrid")
 
 BirdNavNode = {}
 
-function BirdNavNode.new(x,y,z,parent)
+function BirdNavNode.new(x,y,z,parent,size)
     local self = setmetatable({},nil)
     self.positionX = x
     self.positionY = y
     self.positionZ = z
+    self.size = size
     self.parent = parent
     self.children = nil
     self.xNeighbour = nil
@@ -26,11 +27,23 @@ function BirdNavNode.new(x,y,z,parent)
     return self
 end
 
-function BirdNavNode.isSolidLeaf(node)
+function BirdNavNode.isSolid(node)
 
     if node.children == nil then
+        if (node.leafVoxelsBottom ~= nil and node.leafVoxelsBottom ~= 0) or (node.leafVoxelsTop ~= nil and node.leafVoxelsTop ~= 0) then
+            return true
+        else
+            return false
+        end
+    end
 
-        if node.leafVoxelsBottom ~= nil and node.leafVoxelsBottom ~= 0 or node.leafVoxelsTop ~= nil and node.leafVoxelsTop ~= 0 then
+    return true
+end
+
+function BirdNavNode.isLeaf(node)
+
+    if node.children == nil then
+        if node.leafVoxelsBottom ~= nil and node.leafVoxelsTop ~= nil then
             return true
         end
     end

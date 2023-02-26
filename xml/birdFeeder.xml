@@ -5,7 +5,7 @@
         <functions>
             <function>$l10n_function_birdFeeder</function>
         </functions>
-        <image>Images/birdFeeder.dds</image>
+        <image>images/birdFeeder.dds</image>
         <price>500</price>
         <dailyUpkeep>1</dailyUpkeep>
         <lifetime>1000</lifetime>
@@ -27,7 +27,7 @@
     </storeData>
 
     <base>
-        <filename>birdFeeder.i3d</filename>
+        <filename>models/birdFeeder.i3d</filename>
         <canBeRenamed>true</canBeRenamed>
     </base>
 

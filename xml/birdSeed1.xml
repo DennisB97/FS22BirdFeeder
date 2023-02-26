@@ -5,7 +5,7 @@
         <specs>
             <weight ignore="true"/>
         </specs>
-        <image>Images/birdSeed.dds</image>
+        <image>images/birdSeed.dds</image>
         <category>pallets</category>
         <brand>AnimalExperience</brand>
         <price>20</price>
@@ -26,7 +26,7 @@
 
     <base>
         <typeDesc>$l10n_typeDesc_birdSeed</typeDesc>
-        <filename>birdSeed.i3d</filename>
+        <filename>models/birdSeed.i3d</filename>
         <size width="1" length="1" height="1" />
         <canBeReset>false</canBeReset>
         <supportsPickUp>true</supportsPickUp>

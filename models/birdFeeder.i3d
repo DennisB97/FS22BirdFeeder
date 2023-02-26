@@ -6,9 +6,9 @@
   </Asset>
 
   <Files>
-    <File fileId="1" filename="Textures/birdFeeder_mat_diffuse.dds"/>
-    <File fileId="2" filename="Textures/birdFeeder_mat_normal.dds"/>
-    <File fileId="3" filename="Textures/birdFeeder_mat_specular.dds"/>
+    <File fileId="1" filename="textures/birdFeeder_mat_diffuse.dds"/>
+    <File fileId="2" filename="textures/birdFeeder_mat_normal.dds"/>
+    <File fileId="3" filename="textures/birdFeeder_mat_specular.dds"/>
   </Files>
 
 

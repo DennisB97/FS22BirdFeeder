@@ -472,7 +472,7 @@ function PlaceableFeeder:createBirds()
     for i = 1, spec.maxNumberBirds, 1 do
         local x,y,z = self:getRandomBirdSpawn(getWorldTranslation(getChildAt(self.rootNode,0)))
         local bird = FeederBird.new(self,self.isServer, self.isClient)
-        bird:load(self.xmlFile,Utils.getFilename("bird.i3d",self.baseDirectory),x,y,z,0,0,0)
+        bird:load(self.xmlFile,Utils.getFilename("models/bird.i3d",self.baseDirectory),x,y,z,0,0,0)
         bird:register(true)
         bird:changeState(bird.EBirdStates.IDLEFLY)
         table.insert(spec.birds,bird)

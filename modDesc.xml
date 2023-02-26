@@ -18,20 +18,20 @@
     <l10n filenamePrefix="translations/l10n"/>
 
     <storeItems>
-        <storeItem xmlFilename="birdFeeder.xml"/>
-        <storeItem xmlFilename="birdSeed1.xml"/>
+        <storeItem xmlFilename="xml/birdFeeder.xml"/>
+        <storeItem xmlFilename="xml/birdSeed1.xml"/>
     </storeItems>
 
     <brands>
-        <brand title="Animal Experience" image="Images/AnimalExperience.dds" name="AnimalExperience"/>
+        <brand title="Animal Experience" image="images/AnimalExperience.dds" name="AnimalExperience"/>
     </brands>
 
     <extraSourceFiles>
         <sourceFile filename="scripts/birdFeederMod.lua" />
-        <sourceFile filename="scripts/birdStates.lua" />
+        <sourceFile filename="scripts/states/birdStates.lua" />
         <sourceFile filename="scripts/feederBird.lua" />
         <sourceFile filename="scripts/birdNavigation.lua" />
-        <sourceFile filename="scripts/birdNavigationStates.lua" />
+        <sourceFile filename="scripts/states/birdNavigationStates.lua" />
     </extraSourceFiles>
 
     <specializations>
@@ -53,7 +53,7 @@
         </type>
     </vehicleTypes>
 
-    <fillTypes filename="newfilltypes.xml" />
+    <fillTypes filename="xml/newfilltypes.xml" />
 
     <inputBinding>
 		<actionBinding action="BIRDFEEDER_DBG_OCTREE_LAYER_DOWN">

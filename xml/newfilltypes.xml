@@ -5,7 +5,7 @@
 		<fillType name="BIRDSEED" title="$l10n_fillType_birdSeed" showOnPriceTable="false" unitShort="$l10n_unit_gramShort">
 			<physics massPerLiter="0.001" maxPhysicalSurfaceAngle="38" />
 			<image hud="images/birdSeedIcon.dds" />
-			<pallet filename="birdSeed1.xml" />
+			<pallet filename="xml/birdSeed1.xml" />
 			<economy pricePerLiter="0.2000">
 				<factors>
 					<factor period="1"  value="1.00" />
