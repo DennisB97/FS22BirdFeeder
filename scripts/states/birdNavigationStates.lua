@@ -111,7 +111,7 @@ function BirdNavGridStatePrepare:enter()
 
     self:findBoundaries()
 
-    self.owner:changeState(self.owner.EBirdNavigationStates.GENERATE)
+    self.owner:changeState(self.owner.EBirdNavigationGridStates.GENERATE)
 
 end
 
@@ -366,7 +366,7 @@ function BirdNavGridStateGenerate:update(dt)
                 Logging.info(string.format("BirdNavGridStateGenerate done generating octree! Took around %d Minutes, %d Seconds",minutes,seconds))
                 -- Change internal state to idle
                 self.currentState = self.EInternalState.IDLE
-                self.owner:changeState(self.owner.EBirdNavigationStates.IDLE)
+                self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
             end
 
         end
@@ -747,35 +747,153 @@ end
 
 
 
+---@class BirdNavGridStateUpdate.
+-- Used to update existing octree after some static object has been deleted or constructed.
+BirdNavGridStateUpdate = {}
+BirdNavGridStateUpdate_mt = Class(BirdNavGridStateUpdate,BirdNavGridStateBase)
+InitObjectClass(BirdNavGridStateUpdate, "BirdNavGridStateUpdate")
+
+--- new creates a new update state.
+--@param customMt special metatable else uses default.
+function BirdNavGridStateUpdate.new(customMt)
+    local self = BirdNavGridStateUpdate:superClass().new(customMt or BirdNavGridStateUpdate_mt)
+    self.gridUpdate = nil
+    self.nodeToCheck = nil
+
+    return self
+end
+
+--- enter deques a grid update from the queue from parent.
+function BirdNavGridStateUpdate:enter()
+    BirdNavGridStateUpdate:superClass().enter(self)
+
+    if self.owner == nil then
+        Logging.warning("self.owner was nil in BirdNavGridStateUpdate:enter() or gridUpdateQueue is empty!")
+        self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
+        return
+    end
+
+    self:receiveWork()
+
+    self:getNodeToRedo()
+
+
+end
+
+--- leave has no stuff to do in this state.
+function BirdNavGridStateUpdate:leave()
+    BirdNavGridStateUpdate:superClass().leave(self)
+    self.gridUpdate = nil
+    self.nodeToCheck = nil
+end
+
+--- update works to update the area that has been modified.
+--@param dt deltaTime forwarded from the owner update function.
+function BirdNavGridStateUpdate:update(dt)
+    BirdNavGridStateUpdate:superClass().update(self,dt)
+
+
+
+
+
+
+
+
+
+
+end
+
+
+--- destroy no cleanup needed in this state.
+function BirdNavGridStateUpdate:destroy()
+    BirdNavGridStateUpdate:superClass().destroy(self)
+    --
+end
+
+
+function BirdNavGridStateUpdate:receiveWork()
+    if self.owner == nil then
+        return
+    end
+
+    if #self.owner.gridUpdateQueue < 1 then
+        self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
+        return
+    end
+
+    self.gridUpdate = self.owner.gridUpdateQueue[1]
+    table.remove(self.owner.gridUpdateQueue,1)
+
+end
+
+function BirdNavGridStateUpdate:getNodeToRedo()
+    if self.owner == nil or self.gridUpdate == nil or #self.owner.nodeTree < 1 or #self.owner.nodeTree[1] < 1 then
+        return
+    end
+
+    local currentNode = self.owner.nodeTree[1][1]
+    local splitNodes = {}
+
+    while true do
+
+        if currentNode.children ~= nil then
+            for i,node in ipairs(currentNode.children) do
+                if self:findEncomppasingNode(node) == true then
+                    table.insert(splitNodes,i)
+                end
+            end
+        end
+
+        if #splitNodes == 0 or #splitNodes > 1 then
+            self.nodeToCheck = currentNode
+            return
+        else
+            currentNode = currentNode.children[splitNodes[1]]
+            splitNodes = {}
+        end
+
+    end
+
+end
+
+function BirdNavGridStateUpdate:findEncomppasingNode(node)
+
+    local aabbNode = {node.positionX - (node.size / 2), node.positionY - (node.size / 2), node.positionZ - (node.size / 2),node.positionX + (node.size / 2), node.positionY + (node.size / 2), node.positionZ + (node.size / 2) }
+
+    if BirdNavNode.checkAABBIntersection(aabbNode,self.gridUpdate.aabb) == true then
+        return true
+    else
+        return false
+    end
+
+
+end
+
+
+
 ---@class BirdNavGridStateDebug.
 -- Handles visualizing the octree, can't enter this state if it is currently generating the octree or updating.
 -- Can activate by the console command BirdFeederOctreeDebug.
 BirdNavGridStateDebug = {}
 BirdNavGridStateDebug_mt = Class(BirdNavGridStateDebug,BirdNavGridStateBase)
 InitObjectClass(BirdNavGridStateDebug, "BirdNavGridStateDebug")
--- This variable is adjusted by the two console commands to increase and decrease the currently visualized layer of octree.
-BirdNavGridStateDebug.currentDebugLayer = 1
--- This variable is set after finishing the octree creation to the maximum layer + 1, +1 to indicate the possibility to visualize the leaf voxels within the leaf node layer.
-BirdNavGridStateDebug.maxDebugLayer = 9999
--- bool to know if the player has moved beyond the update distance to gather new set of voxels to visualize or if layer has been changed.
-BirdNavGridStateDebug.nodeRefreshNeeded = true
 
 --- increaseDebugLayer is a console command that increases the octree layer to be visualized.
-function BirdNavGridStateDebug.increaseDebugLayer()
+function BirdNavGridStateDebug:increaseDebugLayer()
 
-    BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer + 1
-    BirdNavGridStateDebug.nodeRefreshNeeded = true
+    self.currentDebugLayer = self.currentDebugLayer + 1
+    self.nodeRefreshNeeded = true
     -- max debug layer will be limited to octree's layers, but adding one more so that the leaf node's 64 voxels can also be shown at layer + 1
-    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,1,BirdNavGridStateDebug.maxDebugLayer + 1)
+    self.currentDebugLayer = MathUtil.clamp(self.currentDebugLayer,1,self.maxDebugLayer + 1)
 
 end
 
 --- decreaseDebugLayer is a console command that decreases the octree layer to be visualized.
-function BirdNavGridStateDebug.decreaseDebugLayer()
+function BirdNavGridStateDebug:decreaseDebugLayer()
 
-    BirdNavGridStateDebug.currentDebugLayer = BirdNavGridStateDebug.currentDebugLayer - 1
-    BirdNavGridStateDebug.nodeRefreshNeeded = true
-    BirdNavGridStateDebug.currentDebugLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,1,BirdNavGridStateDebug.maxDebugLayer)
+    self.currentDebugLayer = self.currentDebugLayer - 1
+    self.nodeRefreshNeeded = true
+    self.currentDebugLayer = MathUtil.clamp(self.currentDebugLayer,1,self.maxDebugLayer)
 
 end
 
@@ -794,7 +912,12 @@ function BirdNavGridStateDebug.new(customMt)
     self.maxVoxelsAtTime = 70000
     -- saving the last node that player was in to compare each update, to know when the player enters a new node to display updated info about the new node.
     self.lastNode = {x = 0, y = 0, z = 0}
-
+    -- This variable is adjusted by the two console commands to increase and decrease the currently visualized layer of octree.
+    self.currentDebugLayer = 1
+    -- This variable is set after finishing the octree creation to the maximum layer + 1, +1 to indicate the possibility to visualize the leaf voxels within the leaf node layer.
+    self.maxDebugLayer = 9999
+    -- bool to know if the player has moved beyond the update distance to gather new set of voxels to visualize or if layer has been changed.
+    self.nodeRefreshNeeded = true
     return self
 end
 
@@ -806,10 +929,10 @@ function BirdNavGridStateDebug:enter()
         return
     end
 
-    BirdNavGridStateDebug.maxDebugLayer = #self.owner.nodeTree
+    self.maxDebugLayer = #self.owner.nodeTree
     if g_inputBinding ~= nil then
-        local _, eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_DOWN, self, BirdNavGridStateDebug.decreaseDebugLayer, true, false, false, true, true, true)
-        local _, eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_UP, self, BirdNavGridStateDebug.increaseDebugLayer, true, false, false, true, true, true)
+        local _, _eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_DOWN, self, self.decreaseDebugLayer, true, false, false, true, true, true)
+        local _, _eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_UP, self, self.increaseDebugLayer, true, false, false, true, true, true)
     end
 
     if self.owner ~= nil then
@@ -825,6 +948,10 @@ function BirdNavGridStateDebug:leave()
     if g_inputBinding ~= nil then
         g_inputBinding:removeActionEventsByTarget(self)
     end
+
+    self.debugGrid = nil
+    self.debugGrid = {}
+
 end
 
 --- update calls the functions that handles visualizing the octree and info about current node.
@@ -851,8 +978,8 @@ end
 function BirdNavGridStateDebug:renderOctreeDebugView()
 
     -- node refresh is set to true if layer is changed or player moves enough distance
-    if BirdNavGridStateDebug.nodeRefreshNeeded then
-        BirdNavGridStateDebug.nodeRefreshNeeded = false
+    if self.nodeRefreshNeeded then
+        self.nodeRefreshNeeded = false
         self.debugGrid = nil
         self.debugGrid = {}
 
@@ -867,7 +994,7 @@ function BirdNavGridStateDebug:renderOctreeDebugView()
     end
 
     -- if layer is beyond the leaf node layer means want to show the leaf nodes highest resolution 64 voxels, and need to bit manipulate to get the solid info.
-    if BirdNavGridStateDebug.currentDebugLayer == #self.owner.nodeTree + 1 then
+    if self.currentDebugLayer == #self.owner.nodeTree + 1 then
 
         for _,node in pairs(self.debugGrid) do
 
@@ -929,15 +1056,15 @@ function BirdNavGridStateDebug:renderOctreeDebugView()
 end
 
 --- getCurrentLayersNodeAmount is a tiny helper function to get the correct amount of nodes that the currently selected layer contains.
---@return number of nodes in selected layer in BirdNavGridStateDebug.currentDebugLayer.
+--@return number of nodes in selected layer in currentDebugLayer.
 function BirdNavGridStateDebug:getCurrentLayersNodeAmount()
 
     local leafNodeMultiplier = 1
     -- need to cap the layer if it is leaf nodes voxel layer would be otherwise beyond the array index
-    if BirdNavGridStateDebug.currentDebugLayer == #self.owner.nodeTree + 1 then
+    if self.currentDebugLayer == #self.owner.nodeTree + 1 then
         leafNodeMultiplier = 64
     end
-    local currentLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,1,#self.owner.nodeTree)
+    local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
 
     return #self.owner.nodeTree[currentLayer] * leafNodeMultiplier
 end
@@ -956,10 +1083,10 @@ function BirdNavGridStateDebug:printCurrentNodeInfo(node)
 
     local aabbNode = {node.positionX - (node.size / 2), node.positionY - (node.size / 2), node.positionZ - (node.size / 2),node.positionX + (node.size / 2), node.positionY + (node.size / 2), node.positionZ + (node.size / 2) }
 
-    if BirdNavGridStateDebug.checkPointInAABB(playerX,playerY,playerZ,aabbNode) == true then
+    if BirdNavNode.checkPointInAABB(playerX,playerY,playerZ,aabbNode) == true then
 
         -- need to cap it, as it could be one above the array index to indicate the leaf nodes voxel layers.
-        local currentLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,1,#self.owner.nodeTree)
+        local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
 
         -- -1 as currentLayer 1 is the root of octree
         local currentDivision = math.pow(2,currentLayer - 1)
@@ -997,7 +1124,7 @@ function BirdNavGridStateDebug:updatePlayerDistance()
     local playerX,playerY,playerZ = getWorldTranslation(g_currentMission.player.rootNode)
     local distance = BirdNavigationGrid.getVectorDistance(self.playerLastLocation.x,self.playerLastLocation.y,self.playerLastLocation.z,playerX,playerY,playerZ)
     if distance > self.playerLocationUpdateDistance then
-        BirdNavGridStateDebug.nodeRefreshNeeded = true
+        self.nodeRefreshNeeded = true
         self.playerLastLocation.x = playerX
         self.playerLastLocation.y = playerY
         self.playerLastLocation.z = playerZ
@@ -1015,7 +1142,7 @@ function BirdNavGridStateDebug:findCloseEnoughVoxels(node)
     end
 
     -- need to cap it, as it could be one above the array index to indicate the leaf nodes voxel layers.
-    local currentLayer = MathUtil.clamp(BirdNavGridStateDebug.currentDebugLayer,1,#self.owner.nodeTree)
+    local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
 
     -- -1 as currentLayer 1 is the root of octree
     local currentDivision = math.pow(2,currentLayer - 1)
@@ -1035,7 +1162,7 @@ function BirdNavGridStateDebug:findCloseEnoughVoxels(node)
     local aabbPlayer = {self.playerLastLocation.x - self.voxelCurrentRenderDistance, self.playerLastLocation.y - self.voxelCurrentRenderDistance, self.playerLastLocation.z - self.voxelCurrentRenderDistance,self.playerLastLocation.x
         + self.voxelCurrentRenderDistance, self.playerLastLocation.y + self.voxelCurrentRenderDistance, self.playerLastLocation.z + self.voxelCurrentRenderDistance}
 
-    if BirdNavGridStateDebug.checkAABBIntersection(aabbNode,aabbPlayer) == true and node.children ~= nil then
+    if BirdNavNode.checkAABBIntersection(aabbNode,aabbPlayer) == true and node.children ~= nil then
         for _, childNode in pairs(node.children) do
             self:findCloseEnoughVoxels(childNode)
         end
@@ -1043,31 +1170,8 @@ function BirdNavGridStateDebug:findCloseEnoughVoxels(node)
 
 end
 
---- checkAABBIntersection simple helper function to find if two boxes intersect.
--- aabb's provided as table as following , minX,minY,minZ,maxX,maxY,maxZ.
---@return true if two provided boxes intersect.
-function BirdNavGridStateDebug.checkAABBIntersection(aabb1, aabb2)
 
-  if aabb1[1] > aabb2[4] or aabb2[1] > aabb1[4] or aabb1[2] > aabb2[5] or aabb2[2] > aabb1[5] or aabb1[3] > aabb2[6] or aabb2[3] > aabb1[6] then
-    return false
-  else
-    return true
-  end
-end
-
---- checkPointInAABB simple helper function to find if a point is inside box.
--- aabb provided as table as following , minX,minY,minZ,maxX,maxY,maxZ
---@return true if point is inside provided box.
-function BirdNavGridStateDebug.checkPointInAABB(px, py, pz, aabb)
-    if px >= aabb[1] and px <= aabb[4] and py >= aabb[2] and py <= aabb[5] and pz >= aabb[3] and pz <= aabb[6] then
-        return true
-    else
-        return false
-    end
-end
-
-
---- appendDebugGrid helper function appends a given nodes table into the debugGrid
+--- appendDebugGrid helper function appends a given nodes table into the debugGrid.
 function BirdNavGridStateDebug:appendDebugGrid(nodes)
 
     for _,node in pairs(nodes) do
@@ -1076,7 +1180,7 @@ function BirdNavGridStateDebug:appendDebugGrid(nodes)
 
 end
 
---- destroy not used by this state
+--- destroy not used by this state.
 function BirdNavGridStateDebug:destroy()
     BirdNavGridStateDebug:superClass().destroy(self)
     --

@@ -8,7 +8,6 @@ BirdFeederMod.specFile = Utils.getFilename("scripts/specializations/placeableFee
 BirdFeederMod.birdNavigation = nil
 
 
-
 function BirdFeederMod:loadMap(savegame)
 	
 
