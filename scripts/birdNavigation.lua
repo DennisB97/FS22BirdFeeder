@@ -114,25 +114,6 @@ function BirdNavNode.checkPointInAABB(px, py, pz, aabb)
 end
 
 
-function BirdNavigationGrid:addNode(layerIndex,node)
-    if self == nil then
-        return -1
-    end
-
-    if self.nodeTree == nil then
-        self.nodeTree = {}
-    end
-
-
-    if self.nodeTree[layerIndex] == nil then
-        table.insert(self.nodeTree,layerIndex,{})
-    end
-
-    table.insert(self.nodeTree[layerIndex],node)
-
-    return #self.nodeTree[layerIndex]
-end
-
 BirdNavigationGridUpdate = {}
 
 function BirdNavigationGridUpdate.new(id,x,y,z,aabb)
@@ -162,14 +143,15 @@ function BirdNavigationGrid:QueueGridUpdate(newWork)
 
     table.insert(self.gridUpdateQueue,newWork)
 
-    for _, eventFunction in pairs(self.onGridUpdateQueueIncreasedEvent) do
-
-        if eventFunction.owner ~= nil then
-            eventFunction.callbackFunction(eventFunction.owner)
-        else
-            eventFunction.callbackFunction()
+    local newLatentUpdate = BirdFeederLatentUpdateAction.new(self,
+        function()
+            for _, eventFunction in pairs(self.onGridUpdateQueueIncreasedEvent) do
+                eventFunction.callbackFunction(eventFunction.owner)
+            end
         end
-    end
+    ,5)
+
+    table.insert(self.latentUpdates,newLatentUpdate)
 
 end
 
@@ -221,6 +203,346 @@ function BirdNavigationGrid:onPlaceableModified(placeable)
 
 end
 
+function BirdNavigationGrid:getNodeTreeLayer(size)
+    if size < 1 or size == nil then
+        return 1
+    end
+
+    local dividedBy = self.terrainSize / size
+    -- + 1 as the layer 1 is the root
+    return ((math.log(dividedBy)) / (math.log(2))) + 1
+end
+
+
+--- voxelOverlapCheck is called when a new node/leaf voxel need to be checked for collision.
+-- first it checks the terrain height, if the terrain is higher than the node's y extent then can skip wasting time to collision check as it can be counted as non-solid.
+--@param x is the center coordinate of node/leaf voxel to be checked.
+--@param y is the center coordinate of node/leaf voxel to be checked.
+--@param z is the center coordinate of node/leaf voxel to be checked.
+--@param extentRadius is the radius of the node/leaf voxel to be checked.
+--@return true if was a collision on checked location
+function BirdNavigationGrid:voxelOverlapCheck(x,y,z, extentRadius)
+    self.bTraceVoxelSolid = false
+
+    local terrainHeight = 0
+    if g_currentMission.terrainRootNode ~= nil then
+        terrainHeight = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode,x,y,z)
+    end
+
+    if y + extentRadius < terrainHeight then
+        return
+    end
+
+
+    overlapBox(x,y,z,0,0,0,extentRadius,extentRadius,extentRadius,"voxelOverlapCheckCallback",self,self.collisionMask,false,true,true,false)
+
+end
+
+--- voxelOverlapCheckCallback is callback function for the overlapBox.
+-- Checks if there was any object id found, or if it was the terrain or if it was the boundary then can ignore those.
+-- If it wasn't any of the above then it checks if it has the ClassIds.SHAPE, if it does then it is counted as solid.
+--@param hitObjectId is the id of collided thing.
+function BirdNavigationGrid:voxelOverlapCheckCallback(hitObjectId)
+
+    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode or self.mapBoundaryIDs[hitObjectId] then
+        return true
+    end
+
+
+    if getHasClassId(hitObjectId,ClassIds.SHAPE) and bitAND(getCollisionMask(hitObjectId),CollisionFlag.TREE) ~= CollisionFlag.TREE  then
+        self.bTraceVoxelSolid = true
+        return false
+
+    end
+
+    return true
+end
+
+
+--- createLeafVoxels is called when layer index is reached for the leaf nodes.
+-- the leaftvoxels are 4x4x4 voxels within the leaf node.
+-- Because of limited bit manipulation, the FS bitOR&bitAND works up to 32bits.
+-- So the voxels were divided into to variables, bottom 32 voxels into one, and the top 32 voxels into another.
+-- Where each bit indicates if it is a solid or empty.
+--@param parent node which owns these leaf voxels.
+function BirdNavigationGrid:createLeafVoxels(parent)
+
+    if parent == nil then
+        return
+    end
+
+
+    parent.leafVoxelsBottom = 0
+    parent.leafVoxelsTop = 0
+
+    -- early check if no collision for whole leaf node then no inner 64 voxels need to be checked
+    self:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parent.size / 2)
+    if self.bTraceVoxelSolid == false then
+        return
+    end
+
+
+    local startPositionX = parent.positionX - self.maxVoxelResolution - (self.maxVoxelResolution / 2)
+    local startPositionY = parent.positionY - self.maxVoxelResolution - (self.maxVoxelResolution / 2)
+    local startPositionZ = parent.positionZ - self.maxVoxelResolution - (self.maxVoxelResolution / 2)
+
+    local count = 0
+    for y = 0, 1 do
+        for z = 0 , 3 do
+            for x = 0, 3 do
+                local currentPositionX = startPositionX + (self.maxVoxelResolution * x)
+                local currentPositionY = startPositionY + (self.maxVoxelResolution * y)
+                local currentPositionZ = startPositionZ + (self.maxVoxelResolution * z)
+                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.maxVoxelResolution / 2)
+
+                -- if voxel was solid then set the bit to 1
+                if self.bTraceVoxelSolid == true then
+                    parent.leafVoxelsBottom = bitOR(parent.leafVoxelsBottom,( 1 * 2^count))
+                end
+
+                count = count + 1
+            end
+        end
+    end
+
+
+    count = 0
+    for y = 2, 3 do
+        for z = 0 , 3 do
+            for x = 0, 3 do
+                local currentPositionX = startPositionX + (self.maxVoxelResolution * x)
+                local currentPositionY = startPositionY + (self.maxVoxelResolution * y)
+                local currentPositionZ = startPositionZ + (self.maxVoxelResolution * z)
+                self:voxelOverlapCheck(currentPositionX,currentPositionY,currentPositionZ,self.maxVoxelResolution / 2)
+
+                -- if voxel was solid then set the bit to 1
+                if self.bTraceVoxelSolid == true then
+                    parent.leafVoxelsTop = bitOR(parent.leafVoxelsTop,( 1 * 2^count))
+                end
+
+                count = count + 1
+
+            end
+        end
+    end
+
+end
+
+--- findNeighbours looks for the possible neighbours that the current childNumber can reach.
+--@param node is the which needs its neighbours assigned.
+--@param childNumber is the number of child, to know which location it is within the parent node.
+function BirdNavigationGrid:findNeighbours(node,childNumber)
+
+    if self.owner == nil or node == nil or childNumber < 1 or childNumber > 8 then
+        return
+    end
+
+
+    if childNumber == 1 then
+        self:findOutsideNeighbours(2,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(3,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(5,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 2 then
+        node.xMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].xNeighbour = node
+
+        self:findOutsideNeighbours(4,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(1,self.EDirections.X,node)
+        self:findOutsideNeighbours(6,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 3 then
+        node.zMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].zNeighbour = node
+
+        self:findOutsideNeighbours(4,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(1,self.EDirections.Z,node)
+        self:findOutsideNeighbours(7,self.EDirections.MINUSY,node)
+
+    elseif childNumber == 4 then
+        node.zMinusNeighbour = node.parent.children[2]
+        node.parent.children[2].zNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[3]
+        node.parent.children[3].xNeighbour = node
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSY,node)
+        self:findOutsideNeighbours(2,self.EDirections.Z,node)
+        self:findOutsideNeighbours(3,self.EDirections.X,node)
+
+
+
+    elseif childNumber == 5 then
+        node.yMinusNeighbour = node.parent.children[1]
+        node.parent.children[1].yNeighbour = node
+
+        self:findOutsideNeighbours(6,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(7,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(1,self.EDirections.Y,node)
+
+    elseif childNumber == 6 then
+        node.yMinusNeighbour = node.parent.children[2]
+        node.parent.children[2].yNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[5]
+        node.parent.children[5].xNeighbour = node
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSZ,node)
+        self:findOutsideNeighbours(5,self.EDirections.X,node)
+        self:findOutsideNeighbours(2,self.EDirections.Y,node)
+
+
+
+    elseif childNumber == 7 then
+        node.yMinusNeighbour = node.parent.children[3]
+        node.parent.children[3].yNeighbour = node
+
+        node.zMinusNeighbour = node.parent.children[5]
+        node.parent.children[5].zNeighbour = node
+
+
+        self:findOutsideNeighbours(8,self.EDirections.MINUSX,node)
+        self:findOutsideNeighbours(3,self.EDirections.Y,node)
+        self:findOutsideNeighbours(5,self.EDirections.Z,node)
+
+    elseif childNumber == 8 then
+        node.yMinusNeighbour = node.parent.children[4]
+        node.parent.children[4].yNeighbour = node
+
+        node.xMinusNeighbour = node.parent.children[7]
+        node.parent.children[7].xNeighbour = node
+
+        node.zMinusNeighbour = node.parent.children[6]
+        node.parent.children[6].zNeighbour = node
+
+        self:findOutsideNeighbours(4,self.EDirections.Y,node)
+        self:findOutsideNeighbours(6,self.EDirections.Z,node)
+        self:findOutsideNeighbours(7,self.EDirections.X,node)
+
+    end
+
+
+
+
+end
+
+--- findOutsideNeighbours tries to link the same resolution nodes from the parent's neighbours children.
+-- if it fails to find same resolution it sets the neighbour as the lower resolution/bigger node parent's neighbour.
+-- Also sets the outside neighbours opposite direction neighbour as the currently checked node.
+--@param neighbourChildNumber is the child number which is suppose to be linked to the node.
+--@param direction is the direction the neighbour is being checked from.
+--@param node is the current node which has its neighbours linked.
+function BirdNavigationGrid:findOutsideNeighbours(neighbourChildNumber,direction,node)
+
+    local parentNode = node.parent
+
+    if direction ==  self.EDirections.MINUSX then
+
+        if parentNode.xMinusNeighbour ~= nil then
+
+            local neighbourNode = parentNode.xMinusNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.xMinusNeighbour = neighbourNode
+                return
+            end
+
+            node.xMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.xNeighbour
+            return
+        end
+
+    elseif direction == self.EDirections.MINUSY then
+
+        if parentNode.yMinusNeighbour ~= nil then
+
+            local neighbourNode = parentNode.yMinusNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.yMinusNeighbour = neighbourNode
+                return
+            end
+
+            node.yMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.yNeighbour
+            return
+        end
+
+
+    elseif direction == self.EDirections.MINUSZ then
+
+        if parentNode.zMinusNeighbour ~= nil then
+
+            local neighbourNode = parentNode.zMinusNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.zMinusNeighbour = neighbourNode
+                return
+            end
+
+            node.zMinusNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.zNeighbour
+            return
+        end
+
+    elseif direction == self.EDirections.X then
+
+        if parentNode.xNeighbour ~= nil then
+
+            local neighbourNode = parentNode.xNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.xNeighbour = neighbourNode
+                return
+            end
+
+            node.xNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.xMinusNeighbour
+            return
+        end
+
+
+    elseif direction == self.EDirections.Y then
+
+        if parentNode.yNeighbour ~= nil then
+
+            local neighbourNode = parentNode.yNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.yNeighbour = neighbourNode
+                return
+            end
+
+            node.yNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.yMinusNeighbour
+            return
+        end
+
+    elseif direction == self.EDirections.Z then
+
+        if parentNode.zNeighbour ~= nil then
+
+            local neighbourNode = parentNode.zNeighbour
+            -- if no children then setting the neighbour as the parents neighbour lower resolution.
+            if neighbourNode.children == nil then
+                node.zNeighbour = neighbourNode
+                return
+            end
+
+            node.zNeighbour = neighbourNode.children[neighbourChildNumber]
+            neighbourNode.children[neighbourChildNumber] = node.zMinusNeighbour
+            return
+        end
+
+
+    end
+
+
+
+end
+
+
+
 
 ---new bird navigation being created
 function BirdNavigationGrid.new(customMt)
@@ -229,6 +551,7 @@ function BirdNavigationGrid.new(customMt)
     self.nodeTree = {}
     self.terrainSize = 2048
     self.maxVoxelResolution = 2 -- in meters
+    self.leafNodeResolution = self.maxVoxelResolution * 4
     self.birdNavigationGridStates = {}
     self.EBirdNavigationGridStates = {UNDEFINED = 0, PREPARE = 1, GENERATE = 2, DEBUG = 3, UPDATE = 4, IDLE = 5}
     self.EDirections = {X = 0, MINUSX = 1, Y = 2, MINUSY = 3, Z = 4, MINUSZ = 5}
@@ -238,7 +561,10 @@ function BirdNavigationGrid.new(customMt)
     self.gridUpdateQueue = {}
     self.onGridUpdateQueueIncreasedEvent = {}
     self.bActivated = false
-
+    self.latentUpdates = {}
+    -- used by the grid states to know if collision check was solid, set in the trace callback
+    self.bTraceVoxelSolid = false
+    self.collisionMask = CollisionFlag.STATIC_WORLD + CollisionFlag.WATER
 
     Placeable.finalizePlacement = Utils.appendedFunction(Placeable.finalizePlacement,
         function(...)
@@ -342,7 +668,6 @@ function BirdNavigationGrid:changeState(newState)
         self.birdNavigationGridStates[self.currentGridState]:enter()
     end
 
-
 end
 
 function BirdNavigationGrid:addGridUpdateQueueIncreasedEvent(inOwner,callbackFunction)
@@ -391,6 +716,17 @@ function BirdNavigationGrid:update(dt)
     if self.bActivated == false then
         self.bActivated = true
     end
+
+    for i = #self.latentUpdates, 1, -1 do
+        if self.latentUpdates[i] ~= nil then
+            self.latentUpdates[i]:run()
+            if self.latentUpdates[i].bFinished then
+                table.remove(self.latentUpdates,i)
+            end
+        end
+    end
+
+
 
     if self.birdNavigationGridStates[self.currentGridState] ~= nil then
          self.birdNavigationGridStates[self.currentGridState]:update(dt)

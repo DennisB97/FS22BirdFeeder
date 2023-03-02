@@ -129,7 +129,6 @@ function BirdNavGridStatePrepare:update(dt)
 end
 
 --- prepareGrid handles getting terrainSize ready.
--- And the first octree node is created and added in to the tree.
 function BirdNavGridStatePrepare:prepareGrid()
 
     if self.owner == nil then
@@ -149,10 +148,6 @@ function BirdNavGridStatePrepare:prepareGrid()
         local extension = (2 - self.owner.tileCount % 2) * self.owner.maxVoxelResolution
         self.owner.terrainSize = self.owner.terrainSize + extension
     end
-
-    -- create the root octree node that covers the whole map in size.
-    local rootNode = BirdNavNode.new(0,self.owner.terrainSize / 2,0,nil,self.owner.terrainSize)
-    self.owner:addNode(1,rootNode)
 
 end
 
@@ -247,36 +242,18 @@ InitObjectClass(BirdNavGridStateGenerate, "BirdNavGridStateGenerate")
 function BirdNavGridStateGenerate.new(customMt)
     local self = BirdNavGridStateGenerate:superClass().new(customMt or BirdNavGridStateGenerate_mt)
 
-    -- All the collisions that wants to be included in the octree as solid.
-    self.collisionMask = CollisionFlag.STATIC_WORLD + CollisionFlag.WATER
-    self.bTraceVoxelSolid = true
     self.dynamicLoopLimit = 1
     self.dynamicLoopRemove = 2
     self.dynamicLoopAdd = 1
     self.targetFPS = 0
-    self.currentLoops = 0
-    self.currentLayerIndex = 1
     self.currentNodeIndex = 1
     self.generationTime = 0
-    self.EInternalState = {UNDEFINED = -1 , GETFPS = 0 ,CREATE = 1, IDLE = 2}
+    self.EInternalState = {UNDEFINED = -1 , GETFPS = 0 ,CREATE = 1, EXTERNALNEIGHBOURS = 2 ,IDLE = 3}
     self.currentState = self.EInternalState.GETFPS
     self.fiveSecondFPSLog = {}
     self.FPSLogAmount = 5
-
-    ------- Variables used by generation to allocate once ------------
-    self.currentDivision = 0
-    self.parentVoxelSize = 0
-    self.startPositionX = 0
-    self.startPositionY = 0
-    self.startPositionZ = 0
-    self.currentPositionX = 0
-    self.currentPositionY = 0
-    self.currentPositionZ = 0
-    self.count = 0
-    self.currentLoops = 0
-    self.currentFPS = 0
-    self.terrainHeight = 0
-    self.radius = 0
+    self.currentLayerNodes = {}
+    self.nextLayerNodes = {}
 
     return self
 end
@@ -285,16 +262,23 @@ end
 function BirdNavGridStateGenerate:enter()
     BirdNavGridStateGenerate:superClass().enter(self)
 
+
     if self.owner ~= nil then
+        -- create the root octree node that covers the whole map in size.
+        local rootNode = BirdNavNode.new(0,self.owner.terrainSize / 2,0,nil,self.owner.terrainSize)
+        self.owner.nodeTree = rootNode
+        table.insert(self.currentLayerNodes,rootNode)
         self.owner:raiseActive()
     end
 
+
 end
 
---- leave not used on this state.
+--- leave clean up some used temp variables
 function BirdNavGridStateGenerate:leave()
     BirdNavGridStateGenerate:superClass().leave(self)
-    --
+    self.currentLayerNodes = nil
+    self.nextLayerNodes = nil
 end
 
 --- destroy not used on this state.
@@ -352,34 +336,33 @@ function BirdNavGridStateGenerate:update(dt)
     end
 
 
-    self.currentLoops = 0
+    local currentLoops = 0
 
     -- Loop through the creation as many times as possible restricted by the dynamicLoopLimit
-    while self.currentLoops < self.dynamicLoopLimit do
+    while currentLoops < self.dynamicLoopLimit do
 
         if self.currentState == self.EInternalState.CREATE then
 
             -- doOctree returns true when the octree has been fully made.
             if self:doOctree() == true then
-                local minutes = math.floor(self.generationTime / 60)
-                local seconds = self.generationTime % 60
-                Logging.info(string.format("BirdNavGridStateGenerate done generating octree! Took around %d Minutes, %d Seconds",minutes,seconds))
-                -- Change internal state to idle
-                self.currentState = self.EInternalState.IDLE
-                self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
-            end
+                self:finishGrid()
 
+            end
+        elseif self.currentState == self.EInternalState.EXTERNALNEIGHBOURS then
+
+            if self:doExternNeighbours() == true then
+                self.currentState = self.EInternalState.CREATE
+            end
         end
 
-
-        self.currentLoops = self.currentLoops + 1
+        currentLoops = currentLoops + 1
     end
 
     -- Increase or lower the dynamicLoopLimit depending on the FPS.
-    self.currentFPS = 1 / (dt / 1000)
-    if self.dynamicLoopLimit > 0 + self.dynamicLoopRemove and self.currentFPS < self.targetFPS  then
+    local currentFPS = 1 / (dt / 1000)
+    if self.dynamicLoopLimit > 0 + self.dynamicLoopRemove and currentFPS < self.targetFPS  then
         self.dynamicLoopLimit = self.dynamicLoopLimit - self.dynamicLoopRemove
-    elseif self.currentFPS > self.targetFPS then
+    elseif currentFPS > self.targetFPS then
         self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
     elseif self.dynamicLoopLimit < 1 then
         self.dynamicLoopLimit = self.dynamicLoopLimit + self.dynamicLoopAdd
@@ -388,160 +371,59 @@ function BirdNavGridStateGenerate:update(dt)
 
 end
 
+function BirdNavGridStateGenerate:finishGrid()
+
+    local minutes = math.floor(self.generationTime / 60)
+    local seconds = self.generationTime % 60
+    Logging.info(string.format("BirdNavGridStateGenerate done generating octree! Took around %d Minutes, %d Seconds",minutes,seconds))
+    -- Change state to idle
+    self.currentState = self.EInternalState.IDLE
+    if self.owner ~= nil then
+        self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
+    end
+end
+
 --- doOctree does all parts regarding the octree creation.
--- currentLayerIndex and currentNodeIndex are stored in the state, so that this function can be executed in parts.
+-- currentNodeIndex are stored in the state, so that this function can be executed in parts.
 function BirdNavGridStateGenerate:doOctree()
 
     if self.owner == nil then
         return
     end
 
-    -- -1 as layerIndex 1 is the root of octree
-    self.currentDivision = math.pow(2,self.currentLayerIndex - 1)
-    self.parentVoxelSize = self.owner.terrainSize / self.currentDivision
-
     -- getting the currentNode, which will have either leafvoxels or children created for (if solid).
-    local currentNode = self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex]
-    if self.parentVoxelSize == self.owner.maxVoxelResolution * 4 then
-        self:createLeafVoxels(currentNode,self.parentVoxelSize)
+    local currentNode = self.currentLayerNodes[self.currentNodeIndex]
+    if currentNode.size == self.owner.leafNodeResolution then
+        self.owner:createLeafVoxels(currentNode)
     else
-        self:createChildren(currentNode, self.parentVoxelSize)
+        self:createChildren(currentNode)
     end
 
-    -- If all nodes for the parents have been added then next layer
-    if self:incrementNodeGeneration() == true then
-
-        self.currentLayerIndex = self.currentLayerIndex + 1
-
-        -- If no new layers means reached the final resolution so it is done
-        if self.owner.nodeTree[self.currentLayerIndex] == nil then
+    self.currentNodeIndex = self.currentNodeIndex + 1
+    if self.currentLayerNodes[self.currentNodeIndex] == nil then
+        if self:increaseLayer() == true then
             return true
         end
-
-        return false
+        self.currentState = self.EInternalState.EXTERNALNEIGHBOURS
     end
 
     return false
 
 end
 
---- createLeafVoxels is called when layer index is reached for the leaf nodes.
--- the leaftvoxels are 4x4x4 voxels within the leaf node.
--- Because of limited bit manipulation, the FS bitOR&bitAND works up to 32bits.
--- So the voxels were divided into to variables, bottom 32 voxels into one, and the top 32 voxels into another.
--- Where each bit indicates if it is a solid or empty.
---@param parent node which owns these leaf voxels.
---@param parentVoxelSize the full extent of the parent node voxel.
-function BirdNavGridStateGenerate:createLeafVoxels(parent,parentVoxelSize)
+function BirdNavGridStateGenerate:doExternNeighbours()
 
-    if self.owner == nil or parent == nil or parentVoxelSize == nil then
-        return
+    if self.owner == nil then
+        return false
+    end
+
+    for i = 1, 8 do
+        self.owner.findNeighbours(self.currentLayerNodes[self.currentNodeIndex + (i - 1)],i)
     end
 
 
-    parent.leafVoxelsBottom = 0
-    parent.leafVoxelsTop = 0
-
-    -- early check if no collision for whole leaf node then no inner 64 voxels need to be checked
-    self:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parentVoxelSize / 2)
-    if self.bTraceVoxelSolid == false then
-        return
-    end
-
-
-    self.startPositionX = parent.positionX - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
-    self.startPositionY = parent.positionY - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
-    self.startPositionZ = parent.positionZ - self.owner.maxVoxelResolution - (self.owner.maxVoxelResolution / 2)
-
-    self.count = 0
-    for y = 0, 1 do
-        for z = 0 , 3 do
-            for x = 0, 3 do
-                self.currentPositionX = self.startPositionX + (self.owner.maxVoxelResolution * x)
-                self.currentPositionY = self.startPositionY + (self.owner.maxVoxelResolution * y)
-                self.currentPositionZ = self.startPositionZ + (self.owner.maxVoxelResolution * z)
-                self:voxelOverlapCheck(self.currentPositionX,self.currentPositionY,self.currentPositionZ,self.owner.maxVoxelResolution / 2)
-
-                -- if voxel was solid then set the bit to 1
-                if self.bTraceVoxelSolid == true then
-                    parent.leafVoxelsBottom = bitOR(parent.leafVoxelsBottom,( 1 * 2^self.count))
-                end
-
-                self.count = self.count + 1
-            end
-        end
-    end
-
-
-    self.count = 0
-    for y = 2, 3 do
-        for z = 0 , 3 do
-            for x = 0, 3 do
-                self.currentPositionX = self.startPositionX + (self.owner.maxVoxelResolution * x)
-                self.currentPositionY = self.startPositionY + (self.owner.maxVoxelResolution * y)
-                self.currentPositionZ = self.startPositionZ + (self.owner.maxVoxelResolution * z)
-                self:voxelOverlapCheck(self.currentPositionX,self.currentPositionY,self.currentPositionZ,self.owner.maxVoxelResolution / 2)
-
-                -- if voxel was solid then set the bit to 1
-                if self.bTraceVoxelSolid == true then
-                    parent.leafVoxelsTop = bitOR(parent.leafVoxelsTop,( 1 * 2^self.count))
-                end
-
-                self.count = self.count + 1
-
-            end
-        end
-    end
-
-end
-
---- createChildren gets called for every node which is still not enough resolution to be a leaf node.
--- It creates eight children only if there is a collision found.
--- The newly created children will also have their neighbours linked after being created.
---@param parent node which owns these possible child nodes.
---@param parentVoxelSize the full extent of the parent node voxel.
-function BirdNavGridStateGenerate:createChildren(parent,parentVoxelSize)
-
-    if self.owner == nil or parent == nil or parentVoxelSize == nil then
-        return
-    end
-
-    -- Need to check for a collision if no collision then current node is childless node but not a leaf
-    self:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parentVoxelSize / 2)
-    if self.bTraceVoxelSolid == false then
-        return
-    end
-
-    -- divided by 4 to get the new child voxels radius to offset inside the parent node
-    self.startLocationX = parent.positionX - (parentVoxelSize / 4)
-    self.startLocationY = parent.positionY - (parentVoxelSize / 4)
-    self.startLocationZ = parent.positionZ - (parentVoxelSize / 4)
-
-    self.count = 1
-    parent.children = {}
-    for y = 0, 1 do
-        for z = 0 , 1 do
-            for x = 0, 1 do
-                local newNode = BirdNavNode.new(self.startLocationX + (x * (parentVoxelSize / 2)) ,self.startLocationY + (y * (parentVoxelSize / 2)), self.startLocationZ + (z * (parentVoxelSize / 2)),parent,parentVoxelSize / 2)
-                self.owner:addNode(self.currentLayerIndex + 1,newNode)
-                table.insert(parent.children,newNode)
-                self:findNeighbours(newNode,self.count)
-                self.count = self.count + 1
-            end
-        end
-    end
-
-
-end
-
---- incrementNodeGeneration is called after a parent node has had its children or leafnodes created.
--- Increments the node which is suppose to be checked next.
---@return returns a true if all nodes for currentLayerIndex were done, else a false.
-function BirdNavGridStateGenerate:incrementNodeGeneration()
-
-    self.currentNodeIndex = self.currentNodeIndex + 1
-
-    if self.owner.nodeTree[self.currentLayerIndex][self.currentNodeIndex] == nil then
+    self.currentNodeIndex = self.currentNodeIndex + 8
+    if self.currentLayerNodes[self.currentNodeIndex] == nil then
         self.currentNodeIndex = 1
         return true
     end
@@ -550,201 +432,55 @@ function BirdNavGridStateGenerate:incrementNodeGeneration()
 end
 
 
-
---- findNeighbours looks for the possible neighbours that the current childNumber can reach.
---@param node is the which needs its neighbours assigned.
---@param childNumber is the number of child, to know which location it is within the parent node.
-function BirdNavGridStateGenerate:findNeighbours(node,childNumber)
-
-    if self.owner == nil or node == nil or childNumber < 1 or childNumber > 8 then
-        return
-    end
-
-
-    if childNumber == 1 then
-        self:findOutsideNeighbours(2,self.owner.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(3,self.owner.EDirections.MINUSZ,node)
-        self:findOutsideNeighbours(5,self.owner.EDirections.MINUSY,node)
-
-    elseif childNumber == 2 then
-        node.xMinusNeighbour = node.parent.children[1]
-        node.parent.children[1].xNeighbour = node
-
-        self:findOutsideNeighbours(4,self.owner.EDirections.MINUSZ,node)
-        self:findOutsideNeighbours(6,self.owner.EDirections.MINUSY,node)
-
-    elseif childNumber == 3 then
-        node.zMinusNeighbour = node.parent.children[1]
-        node.parent.children[1].zNeighbour = node
-
-        self:findOutsideNeighbours(4,self.owner.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(7,self.owner.EDirections.MINUSY,node)
-
-    elseif childNumber == 4 then
-        node.zMinusNeighbour = node.parent.children[2]
-        node.parent.children[2].zNeighbour = node
-
-        node.xMinusNeighbour = node.parent.children[3]
-        node.parent.children[3].xNeighbour = node
-
-        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSY,node)
-
-
-
-    elseif childNumber == 5 then
-        node.yMinusNeighbour = node.parent.children[1]
-        node.parent.children[1].yNeighbour = node
-
-        self:findOutsideNeighbours(6,self.owner.EDirections.MINUSX,node)
-        self:findOutsideNeighbours(7,self.owner.EDirections.MINUSZ,node)
-
-    elseif childNumber == 6 then
-        node.yMinusNeighbour = node.parent.children[2]
-        node.parent.children[2].yNeighbour = node
-
-        node.xMinusNeighbour = node.parent.children[5]
-        node.parent.children[5].xNeighbour = node
-
-        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSZ,node)
-
-    elseif childNumber == 7 then
-        node.yMinusNeighbour = node.parent.children[3]
-        node.parent.children[3].yNeighbour = node
-
-        node.zMinusNeighbour = node.parent.children[5]
-        node.parent.children[5].zNeighbour = node
-
-
-        self:findOutsideNeighbours(8,self.owner.EDirections.MINUSX,node)
-
-    elseif childNumber == 8 then
-        node.yMinusNeighbour = node.parent.children[4]
-        node.parent.children[4].yNeighbour = node
-
-        node.xMinusNeighbour = node.parent.children[7]
-        node.parent.children[7].xNeighbour = node
-
-        node.zMinusNeighbour = node.parent.children[6]
-        node.parent.children[6].zNeighbour = node
-
-    end
-
-
-
-
-end
-
---- findOutsideNeighbours tries to link the same resolution nodes from the parent's neighbours children.
--- if it fails to find same resolution it sets the neighbour as the lower resolution/bigger node parent's neighbour.
--- Also sets the outside neighbours opposite direction neighbour as the currently checked node.
---@param neighbourChildNumber is the child number which is suppose to be linked to the node.
---@param direction is the direction the neighbour is being checked from.
---@param node is the current node which has its neighbours linked.
-function BirdNavGridStateGenerate:findOutsideNeighbours(neighbourChildNumber,direction,node)
-
-    local parentNode = node.parent
-
-    if direction ==  self.owner.EDirections.MINUSX then
-
-        if parentNode.xMinusNeighbour ~= nil then
-
-            local neighbourNode = parentNode.xMinusNeighbour
-            -- if no children then setting the neighbour as the parents neighbour lower resolution.
-            if neighbourNode.children == nil then
-                node.xMinusNeighbour = parentNode.xMinusNeighbour
-                return
-            end
-
-            node.xMinusNeighbour = neighbourNode.children[neighbourChildNumber]
-            neighbourNode.children[neighbourChildNumber].xNeighbour = node
-
-            return
-        end
-
-    elseif direction == self.owner.EDirections.MINUSY then
-
-        if parentNode.yMinusNeighbour ~= nil then
-
-            local neighbourNode = parentNode.yMinusNeighbour
-            -- if no children then setting the neighbour as the parents neighbour lower resolution.
-            if neighbourNode.children == nil then
-                node.yMinusNeighbour = parentNode.yMinusNeighbour
-                return
-            end
-
-            node.yMinusNeighbour = neighbourNode.children[neighbourChildNumber]
-            neighbourNode.children[neighbourChildNumber].yNeighbour = node
-
-            return
-        end
-
-
-    elseif direction == self.owner.EDirections.MINUSZ then
-
-        if parentNode.zMinusNeighbour ~= nil then
-
-            local neighbourNode = parentNode.zMinusNeighbour
-            -- if no children then setting the neighbour as the parents neighbour lower resolution.
-            if neighbourNode.children == nil then
-                node.zMinusNeighbour = parentNode.zMinusNeighbour
-                return
-            end
-
-            node.zMinusNeighbour = neighbourNode.children[neighbourChildNumber]
-            neighbourNode.children[neighbourChildNumber].zNeighbour = node
-
-            return
-        end
-
-    end
-
-
-
-end
-
---- voxelOverlapCheck is called when a new node/leaf voxel need to be checked for collision.
--- first it checks the terrain height, if the terrain is higher than the node's y extent then can skip wasting time to collision check as it can be counted as non-solid.
---@param x is the center coordinate of node/leaf voxel to be checked.
---@param y is the center coordinate of node/leaf voxel to be checked.
---@param z is the center coordinate of node/leaf voxel to be checked.
---@param extentRadius is the radius of the node/leaf voxel to be checked.
-function BirdNavGridStateGenerate:voxelOverlapCheck(x,y,z, extentRadius)
-    self.bTraceVoxelSolid = false
-
-    self.terrainHeight = 0
-    if g_currentMission.terrainRootNode ~= nil then
-        self.terrainHeight = getTerrainHeightAtWorldPos(g_currentMission.terrainRootNode,x,y,z)
-    end
-
-    if y + extentRadius < self.terrainHeight then
-        return
-    end
-
-
-    overlapBox(x,y,z,0,0,0,extentRadius,extentRadius,extentRadius,"voxelOverlapCheckCallback",self,self.collisionMask,false,true,true,false)
-
-end
-
---- voxelOverlapCheckCallback is callback function for the overlapBox.
--- Checks if there was any object id found, or if it was the terrain or if it was the boundary then can ignore those.
--- If it wasn't any of the above then it checks if it has the ClassIds.SHAPE, if it does then it is counted as solid.
---@param hitObjectId is the id of collided thing.
-function BirdNavGridStateGenerate:voxelOverlapCheckCallback(hitObjectId)
-
-    if hitObjectId < 1 or hitObjectId == g_currentMission.terrainRootNode or self.owner.mapBoundaryIDs[hitObjectId] then
+function BirdNavGridStateGenerate:increaseLayer()
+    self.currentLayerNodes = self.nextLayerNodes
+    self.currentNodeIndex = 1
+    self.nextLayerNodes = nil
+    self.nextLayerNodes = {}
+    if #self.currentLayerNodes < 1 then
         return true
     end
 
-
-    if getHasClassId(hitObjectId,ClassIds.SHAPE) and bitAND(getCollisionMask(hitObjectId),CollisionFlag.TREE) ~= CollisionFlag.TREE  then
-        self.bTraceVoxelSolid = true
-        return false
-
-    end
-
-    return true
+    return false
 end
 
+
+
+--- createChildren gets called for every node which is still not enough resolution to be a leaf node.
+-- It creates eight children only if there is a collision found.
+-- The newly created children will also have their neighbours linked after being created.
+--@param parent node which owns these possible child nodes.
+--@param parentVoxelSize the full extent of the parent node voxel.
+function BirdNavGridStateGenerate:createChildren(parent)
+
+    if self.owner == nil or parent == nil then
+        return
+    end
+
+    -- Need to check for a collision if no collision then current node is childless node but not a leaf
+    self.owner:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parent.size / 2)
+    if self.owner.bTraceVoxelSolid == false then
+        return
+    end
+
+    -- divided by 4 to get the new child voxels radius to offset inside the parent node
+    self.startLocationX = parent.positionX - (parent.size / 4)
+    self.startLocationY = parent.positionY - (parent.size / 4)
+    self.startLocationZ = parent.positionZ - (parent.size / 4)
+
+    parent.children = {}
+    for y = 0, 1 do
+        for z = 0 , 1 do
+            for x = 0, 1 do
+                local newNode = BirdNavNode.new(self.startLocationX + (x * (parent.size / 2)) ,self.startLocationY + (y * (parent.size / 2)), self.startLocationZ + (z * (parent.size / 2)),parent,parent.size / 2)
+                table.insert(self.nextLayerNodes,newNode)
+                table.insert(parent.children,newNode)
+            end
+        end
+    end
+
+
+end
 
 
 ---@class BirdNavGridStateUpdate.
@@ -759,6 +495,12 @@ function BirdNavGridStateUpdate.new(customMt)
     local self = BirdNavGridStateUpdate:superClass().new(customMt or BirdNavGridStateUpdate_mt)
     self.gridUpdate = nil
     self.nodeToCheck = nil
+    self.nodesToDelete = {}
+    self.currentLayerNodes = {}
+    self.currentLayerNodes = {}
+    self.currentNodeIndex = 1
+    self.nextLayerNodes = {}
+    self.bFindNeighbours = false
 
     return self
 end
@@ -768,16 +510,15 @@ function BirdNavGridStateUpdate:enter()
     BirdNavGridStateUpdate:superClass().enter(self)
 
     if self.owner == nil then
-        Logging.warning("self.owner was nil in BirdNavGridStateUpdate:enter() or gridUpdateQueue is empty!")
+        Logging.warning("self.owner was nil in BirdNavGridStateUpdate:enter()")
         self.owner:changeState(self.owner.EBirdNavigationGridStates.IDLE)
         return
     end
 
     self:receiveWork()
-
-    self:getNodeToRedo()
-
-
+    if self.owner ~= nil then
+        self.owner:raiseActive()
+    end
 end
 
 --- leave has no stuff to do in this state.
@@ -785,6 +526,10 @@ function BirdNavGridStateUpdate:leave()
     BirdNavGridStateUpdate:superClass().leave(self)
     self.gridUpdate = nil
     self.nodeToCheck = nil
+    self.currentLayerNodes = nil
+    self.currentLayerNodes = {}
+    self.nextLayerNodes = nil
+    self.nextLayerNodes = {}
 end
 
 --- update works to update the area that has been modified.
@@ -792,14 +537,16 @@ end
 function BirdNavGridStateUpdate:update(dt)
     BirdNavGridStateUpdate:superClass().update(self,dt)
 
+    if self.owner ~= nil then
+        self.owner:raiseActive()
+    end
 
-
-
-
-
-
-
-
+    if not self.bFindNeighbours and self:updateGrid() == true then
+        Logging.info("Updated BirdNavigationGrid")
+        self:receiveWork()
+    elseif self.bFindNeighbours then
+        self:doExternNeighbours()
+    end
 
 end
 
@@ -824,14 +571,16 @@ function BirdNavGridStateUpdate:receiveWork()
     self.gridUpdate = self.owner.gridUpdateQueue[1]
     table.remove(self.owner.gridUpdateQueue,1)
 
+    self:getNodeToRedo()
+
 end
 
 function BirdNavGridStateUpdate:getNodeToRedo()
-    if self.owner == nil or self.gridUpdate == nil or #self.owner.nodeTree < 1 or #self.owner.nodeTree[1] < 1 then
+    if self.owner == nil or self.gridUpdate == nil or self.owner.nodeTree == nil then
         return
     end
 
-    local currentNode = self.owner.nodeTree[1][1]
+    local currentNode = self.owner.nodeTree
     local splitNodes = {}
 
     while true do
@@ -846,6 +595,7 @@ function BirdNavGridStateUpdate:getNodeToRedo()
 
         if #splitNodes == 0 or #splitNodes > 1 then
             self.nodeToCheck = currentNode
+            table.insert(self.currentLayerNodes,currentNode)
             return
         else
             currentNode = currentNode.children[splitNodes[1]]
@@ -866,9 +616,148 @@ function BirdNavGridStateUpdate:findEncomppasingNode(node)
         return false
     end
 
+end
+
+
+function BirdNavGridStateUpdate:updateGrid()
+
+    if self.owner == nil or self.nodeToCheck == nil then
+        return
+    end
+
+
+    -- getting the currentNode, which will have either leafvoxels or children created for (if solid).
+    local currentNode = self.currentLayerNodes[self.currentNodeIndex]
+
+    if currentNode.size == self.owner.leafNodeResolution then
+        self.owner:createLeafVoxels(currentNode,currentNode.size)
+    else
+        self:reCheckChildren(currentNode)
+    end
+
+    self.currentNodeIndex = self.currentNodeIndex + 1
+    if self.currentLayerNodes[self.currentNodeIndex] == nil then
+        self.currentLayerNodes = self.nextLayerNodes
+        self.currentNodeIndex = 1
+        self.nextLayerNodes = nil
+        self.nextLayerNodes = {}
+        if #self.currentLayerNodes < 1 then
+            return true
+        end
+
+          self.bFindNeighbours = true
+    end
+
+    return false
+end
+
+function BirdNavGridStateUpdate:reCheckChildren(parent)
+
+    if self.owner == nil or parent == nil then
+        return
+    end
+
+    self.owner:voxelOverlapCheck(parent.positionX,parent.positionY,parent.positionZ,parent.size / 2)
+
+    print("overlap check was : " .. tostring(self.owner.bTraceVoxelSolid))
+
+    if self.owner.bTraceVoxelSolid and parent.children == nil then
+        -- divided by 4 to get the new child voxels radius to offset inside the parent node
+        self.startLocationX = parent.positionX - (parent.size / 4)
+        self.startLocationY = parent.positionY - (parent.size / 4)
+        self.startLocationZ = parent.positionZ - (parent.size / 4)
+        parent.children = {}
+        for y = 0, 1 do
+            for z = 0 , 1 do
+                for x = 0, 1 do
+                    local newNode = BirdNavNode.new(self.startLocationX + (x * (parent.size / 2)) ,self.startLocationY + (y * (parent.size / 2)), self.startLocationZ + (z * (parent.size / 2)),parent,parent.size / 2)
+                    table.insert(self.nextLayerNodes,newNode)
+                    table.insert(parent.children,newNode)
+                end
+            end
+        end
+    elseif not self.owner.bTraceVoxelSolid and parent.children ~= nil then
+        -- become empty delete children and redo neigbours
+        for i = 1, 8 do
+            self:removeNeighbours(parent.children[i],parent)
+        end
+        parent.children = nil
+    elseif not self.owner.bTraceVoxelSolid and parent.children == nil then
+        -- no change on this node
+        return
+    else
+        -- no change for this node but has children so need to go deeper
+        for i = 1, 8 do
+            table.insert(self.nextLayerNodes,parent.children[i])
+        end
+    end
+
 
 end
 
+function BirdNavGridStateUpdate:doExternNeighbours()
+
+    if self.owner == nil then
+        return
+    end
+
+    for i = 1, 8 do
+        self.owner.findNeighbours(self.currentLayerNodes[self.currentNodeIndex + (i - 1)],i)
+    end
+
+
+    self.currentNodeIndex = self.currentNodeIndex + 8
+    if self.currentLayerNodes[self.currentNodeIndex] == nil then
+        self.currentNodeIndex = 1
+        self.bFindNeighbours = false
+    end
+
+end
+
+
+function BirdNavGridStateUpdate:removeNeighbours(node,parent)
+
+    if node.children == nil then
+        self:deleteAllNeighbours(node)
+        return
+    end
+
+    for i = 1, 8 do
+        self:removeNeighbours(node.children[i],parent)
+    end
+
+    self:deleteAllNeighbours(node,parent)
+
+end
+
+function BirdNavGridStateUpdate:deleteAllNeighbours(node,newParentNeighbour)
+
+    if node.xNeighbour ~= nil then
+        node.xNeighbour.xMinusNeighbour = newParentNeighbour
+    end
+
+    if node.yNeighbour ~= nil then
+        node.yNeighbour.yMinusNeighbour = newParentNeighbour
+    end
+
+    if node.zNeighbour ~= nil then
+        node.zNeighbour.zMinusNeighbour = newParentNeighbour
+    end
+
+    if node.xMinusNeighbour ~= nil then
+        node.xMinusNeighbour.xNeighbour = newParentNeighbour
+    end
+
+    if node.yMinusNeighbour ~= nil then
+        node.yMinusNeighbour.yNeighbour = newParentNeighbour
+    end
+
+    if node.zMinusNeighbour ~= nil then
+        node.zMinusNeighbour.zNeighbour = newParentNeighbour
+    end
+
+
+end
 
 
 ---@class BirdNavGridStateDebug.
@@ -929,7 +818,7 @@ function BirdNavGridStateDebug:enter()
         return
     end
 
-    self.maxDebugLayer = #self.owner.nodeTree
+    self.maxDebugLayer = self.owner:getNodeTreeLayer(self.owner.leafNodeResolution)
     if g_inputBinding ~= nil then
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_DOWN, self, self.decreaseDebugLayer, true, false, false, true, true, true)
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.BIRDFEEDER_DBG_OCTREE_LAYER_UP, self, self.increaseDebugLayer, true, false, false, true, true, true)
@@ -948,7 +837,7 @@ function BirdNavGridStateDebug:leave()
     if g_inputBinding ~= nil then
         g_inputBinding:removeActionEventsByTarget(self)
     end
-
+    self.nodeRefreshNeeded = true
     self.debugGrid = nil
     self.debugGrid = {}
 
@@ -969,7 +858,7 @@ function BirdNavGridStateDebug:update(dt)
 
     self:renderOctreeDebugView()
 
-    self:printCurrentNodeInfo(self.owner.nodeTree[1][1])
+    self:printCurrentNodeInfo(self.owner.nodeTree)
 
 
 end
@@ -984,17 +873,17 @@ function BirdNavGridStateDebug:renderOctreeDebugView()
         self.debugGrid = {}
 
         -- if too many voxels at current layer to render then limit distance, else whole maps distance of nodes can be gathered.
-        if self:getCurrentLayersNodeAmount() > self.maxVoxelsAtTime then
+        if self:getLimitRenderDistance() then
             self.voxelCurrentRenderDistance = self.voxelLimitedMaxRenderDistance
         else
             self.voxelCurrentRenderDistance = self.owner.terrainSize
         end
 
-        self:findCloseEnoughVoxels(self.owner.nodeTree[1][1])
+        self:findCloseEnoughVoxels(self.owner.nodeTree)
     end
 
     -- if layer is beyond the leaf node layer means want to show the leaf nodes highest resolution 64 voxels, and need to bit manipulate to get the solid info.
-    if self.currentDebugLayer == #self.owner.nodeTree + 1 then
+    if self.currentDebugLayer == self.maxDebugLayer + 1 then
 
         for _,node in pairs(self.debugGrid) do
 
@@ -1055,18 +944,16 @@ function BirdNavGridStateDebug:renderOctreeDebugView()
 
 end
 
---- getCurrentLayersNodeAmount is a tiny helper function to get the correct amount of nodes that the currently selected layer contains.
---@return number of nodes in selected layer in currentDebugLayer.
-function BirdNavGridStateDebug:getCurrentLayersNodeAmount()
+--- getLimitRenderDistance is a tiny helper function to get if the distance of visible nodes should be limited for performance reasons.
+--@return true if should limit the distance of visible debug nodes.
+function BirdNavGridStateDebug:getLimitRenderDistance()
 
-    local leafNodeMultiplier = 1
-    -- need to cap the layer if it is leaf nodes voxel layer would be otherwise beyond the array index
-    if self.currentDebugLayer == #self.owner.nodeTree + 1 then
-        leafNodeMultiplier = 64
+    -- if the current debug layer is more than 0.7 (70%) of existing layers, then showing quite high resolution so can limit the render distance.
+    if (self.currentDebugLayer / (self.maxDebugLayer + 1))  > 0.7 then
+        return true
     end
-    local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
 
-    return #self.owner.nodeTree[currentLayer] * leafNodeMultiplier
+    return false
 end
 
 --- printCurrentNodeInfo finds the node which player is currently in up to the currently selected layer.
@@ -1086,7 +973,7 @@ function BirdNavGridStateDebug:printCurrentNodeInfo(node)
     if BirdNavNode.checkPointInAABB(playerX,playerY,playerZ,aabbNode) == true then
 
         -- need to cap it, as it could be one above the array index to indicate the leaf nodes voxel layers.
-        local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
+        local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,self.maxDebugLayer)
 
         -- -1 as currentLayer 1 is the root of octree
         local currentDivision = math.pow(2,currentLayer - 1)
@@ -1142,7 +1029,7 @@ function BirdNavGridStateDebug:findCloseEnoughVoxels(node)
     end
 
     -- need to cap it, as it could be one above the array index to indicate the leaf nodes voxel layers.
-    local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,#self.owner.nodeTree)
+    local currentLayer = MathUtil.clamp(self.currentDebugLayer,1,self.maxDebugLayer)
 
     -- -1 as currentLayer 1 is the root of octree
     local currentDivision = math.pow(2,currentLayer - 1)

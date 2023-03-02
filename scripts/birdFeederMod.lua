@@ -1,17 +1,38 @@
 
 --- Creating a root class for the mod containing some mod variables
-BirdFeederMod = {};
+BirdFeederMod = {}
 BirdFeederMod.modName = g_currentModName;
 BirdFeederMod.modDir = g_currentModDirectory;
 BirdFeederMod.bRegistered = false
 BirdFeederMod.specFile = Utils.getFilename("scripts/specializations/placeableFeeder.lua", BirdFeederMod.modDir)
 BirdFeederMod.birdNavigation = nil
 
+---@class BirdFeederLatentAction enable a function to be run in a n update tick delay.
+BirdFeederLatentUpdateAction = {}
+BirdFeederLatentUpdateAction_mt = Class(BirdFeederLatentUpdateAction)
+InitObjectClass(BirdFeederLatentUpdateAction, "BirdFeederLatentUpdateAction")
+
+function BirdFeederLatentUpdateAction.new(inOwner,inFunction,updateDelay)
+    local self = setmetatable({},BirdFeederLatentUpdateAction_mt)
+    self.latentFunction = inFunction
+    self.updateDelay = updateDelay -- in update ticks to skip until action should fire
+    self.delayCounter = 0
+    self.owner = inOwner
+    self.bFinished = false
+    return self
+end
+
+function BirdFeederLatentUpdateAction:run()
+    self.delayCounter = self.delayCounter + 1
+    if self.delayCounter >= self.updateDelay and not self.bFinished then
+        self.latentFunction(self.owner)
+        self.delayCounter = 0
+        self.bFinished = true
+    end
+end
 
 function BirdFeederMod:loadMap(savegame)
 	
-
-
 end
 
 function BirdFeederMod:deleteMap(savegame)
