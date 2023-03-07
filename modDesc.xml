@@ -13,9 +13,13 @@
         <de>Dekorativer Vogelhäuschen mit Fütterungsfunktion und Vögeln</de>
     </description>
 
-    <iconFilename>Images/birdFeeder.dds</iconFilename>
+    <iconFilename>images/birdFeeder.dds</iconFilename>
     <multiplayer supported="true"/>
     <l10n filenamePrefix="translations/l10n"/>
+
+	<dependencies>
+		<dependency>FS22_FlyPathfinding</dependency>
+	</dependencies>
 
     <storeItems>
         <storeItem xmlFilename="xml/birdFeeder.xml"/>
@@ -30,8 +34,6 @@
         <sourceFile filename="scripts/birdFeederMod.lua" />
         <sourceFile filename="scripts/states/birdStates.lua" />
         <sourceFile filename="scripts/feederBird.lua" />
-        <sourceFile filename="scripts/birdNavigation.lua" />
-        <sourceFile filename="scripts/states/birdNavigationStates.lua" />
     </extraSourceFiles>
 
     <specializations>
@@ -54,19 +56,5 @@
     </vehicleTypes>
 
     <fillTypes filename="xml/newfilltypes.xml" />
-
-    <inputBinding>
-		<actionBinding action="BIRDFEEDER_DBG_OCTREE_LAYER_DOWN">
-			<binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_lalt KEY_KP_minus" />
-		</actionBinding>
-		<actionBinding action="BIRDFEEDER_DBG_OCTREE_LAYER_UP">
-			<binding device="KB_MOUSE_DEFAULT" input="KEY_lshift KEY_lalt KEY_KP_plus" />
-		</actionBinding>
-    </inputBinding>
-
-	<actions>
-		<action name="BIRDFEEDER_DBG_OCTREE_LAYER_DOWN" />
-		<action name="BIRDFEEDER_DBG_OCTREE_LAYER_UP" />
-	</actions>
 
 </modDesc>
