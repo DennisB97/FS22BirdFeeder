@@ -5,25 +5,20 @@ CustomVehicleInfo = {}
 CustomVehicleInfo.className = "CustomVehicleInfo"
 
 
----Checks if all prerequisite specializations are loaded
+---Checks if all prerequisite specializations are loaded, in this case none needed
 -- @param table specializations specializations
 -- @return boolean hasPrerequisite true if all prerequisite specializations are loaded
 function CustomVehicleInfo.prerequisitesPresent(specializations)
     return true;
 end
 
-
 ---Init this specialization, registering couple needed xml string paths
 function CustomVehicleInfo.initSpecialization()
-
     local schema = Vehicle.xmlSchema
     schema:setXMLSpecializationType("CustomVehicleInfo")
     schema:register(XMLValueType.STRING,"vehicle.customVehicleInfo#uiInfoToRemove", "Selected information to remove, Mass etc. &#160 inserted into spaces within words")
     schema:register(XMLValueType.STRING,"vehicle.customVehicleInfo#uiInfoTitle", "Title for the info UI")
-
 end
-
-
 
 ---Register overwritten functions
 function CustomVehicleInfo.registerOverwrittenFunctions(vehicleType)
@@ -34,9 +29,6 @@ end
 function CustomVehicleInfo.registerEventListeners(vehicleType)
     SpecializationUtil.registerEventListener(vehicleType, "onLoad", CustomVehicleInfo)
 end
-
-
-
 
 ---Overridden function that calls base function but also proceeds to change few variables of the UI box
 function CustomVehicleInfo:showModifiedInfo(superFunc,box)
@@ -64,12 +56,10 @@ function CustomVehicleInfo:showModifiedInfo(superFunc,box)
         end
     end
 
-
-
  end
 
 ---Called to modify given string into word table
---@ return a table value containing all words that should be removed from UI info box.
+--@return a table value containing all words that should be removed from UI info box.
 function CustomVehicleInfo.prepareTableFromString(inString)
 
     local wordTable = {}

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<modDesc descVersion="61">
+<modDesc descVersion="74">
     <author>Dennis B</author>
     <version>1.0.0.0</version>
 
@@ -9,11 +9,21 @@
     </title>
 
     <description>
-        <en>Decorational bird feeder with feeding functionality and birds</en>
-        <de>Dekorativer Vogelhäuschen mit Fütterungsfunktion und Vögeln</de>
+        <en><![CDATA[Decorational bird feeder with feeding functionality and birds.
+Full multiplayer support.
+Requires FS22_FlyPathfinding mod.
+Feeder can be found in the Animals/Others construction tab.
+Bird seed can bought from the Pallets menu.
+    ]]></en>
+        <de><![CDATA[Dekoratives Vogelhäuschen mit Fütterungsfunktion und Vögeln.
+Volle Multiplayer-Unterstützung.
+Erfordert den FS22_FlyPathfinding-Mod.
+Den Futterspender finden Sie auf der Registerkarte „Tiere/Andere Konstruktion“.
+Vogelfutter kann im Palettenmenü gekauft werden.
+    ]]></de>
     </description>
 
-    <iconFilename>images/birdFeeder.dds</iconFilename>
+    <iconFilename>images/icon_birdFeeder.dds</iconFilename>
     <multiplayer supported="true"/>
     <l10n filenamePrefix="translations/l10n"/>
 
@@ -23,7 +33,7 @@
 
     <storeItems>
         <storeItem xmlFilename="xml/birdFeeder.xml"/>
-        <storeItem xmlFilename="xml/birdSeed1.xml"/>
+        <storeItem xmlFilename="xml/birdSeed.xml"/>
     </storeItems>
 
     <brands>
@@ -32,8 +42,10 @@
 
     <extraSourceFiles>
         <sourceFile filename="scripts/birdFeederMod.lua" />
+        <sourceFile filename="scripts/states/birdFeederStates.lua" />
         <sourceFile filename="scripts/states/birdStates.lua" />
         <sourceFile filename="scripts/feederBird.lua" />
+        <sourceFile filename="scripts/events/feederInvalidPlacementEvent.lua" />
     </extraSourceFiles>
 
     <specializations>

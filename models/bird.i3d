@@ -1,16 +1,26 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
-<i3D name="Bird" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+<i3D name="bird" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
   <Asset>
     <Export program="GIANTS Editor 64bit" version="9.0.3"/>
   </Asset>
 
   <Files>
+    <File fileId="1" filename="textures/bird_mat_diffuse.dds"/>
+    <File fileId="2" filename="textures/bird_mat_normal.dds"/>
+    <File fileId="3" filename="textures/bird_mat_specular.dds"/>
+    <File fileId="4" filename="textures/feathers.dds"/>
   </Files>
 
 
   <Materials>
-    <Material name="bird_mat" materialId="4" diffuseColor="0.0156863 0.00392157 0.8 1" specularColor="0.494118 1 0">
+    <Material name="bird_mat" materialId="4">
+      <Texture fileId="1"/>
+      <Normalmap fileId="2"/>
+      <Glossmap fileId="3"/>
+    </Material>
+    <Material name="feather_mat" materialId="5" specularColor="0.494118 1 0">
+      <Texture fileId="4"/>
     </Material>
   </Materials>
 
@@ -23,24 +33,164 @@
   </Dynamics>
 
   <Scene>
-      <TransformGroup name="root" rotation="-6.83019e-06 -0 0" nodeId="7">
-        <TransformGroup name="body" rotation="90 -0 0" nodeId="8">
-          <TransformGroup name="bodyMain" translation="0 1.17197e-09 -0.0155233" rotation="-32.0223 0.264915 1.08778" nodeId="9">
-            <TransformGroup name="bodyAss" translation="0 2.82739e-09 -0.0253479" rotation="145.465 -1.51072 -2.44777" nodeId="10"/>
-            <TransformGroup name="bodyLeftWing" translation="0 2.82739e-09 -0.0253479" rotation="20.7777 81.4703 25.6777" nodeId="11"/>
-            <TransformGroup name="bodyNeck" translation="0 2.82739e-09 -0.0253479" rotation="-21.2457 0.71343 -0.133818" nodeId="12">
-              <TransformGroup name="bodyHead" translation="2.91038e-11 1.80194e-09 -0.0222293" rotation="-13.904 0.239514 -0.0292049" nodeId="13"/>
+      <TransformGroup name="bird" rotation="-6.83019e-06 -0 0" nodeId="13">
+        <TransformGroup name="birdAudioNode" nodeId="14"/>
+        <TransformGroup name="standBird" nodeId="15">
+          <TransformGroup name="spine.003" translation="8.29552e-08 0.0256221 -0.0112843" rotation="159.224 -0.000431125 -2.61572e-05" nodeId="16">
+            <TransformGroup name="spine.002" translation="5.5012e-11 0.00011265 0.000250372" rotation="-179.169 1.05933e-07 -3.52678e-05" nodeId="17">
+              <TransformGroup name="spine.001" translation="7.10543e-15 1.39737e-09 -0.0114482" rotation="14.8712 -4.70036e-08 -7.1136e-06" nodeId="18"/>
             </TransformGroup>
-            <TransformGroup name="bodyRightWing" translation="0 2.82739e-09 -0.0253479" rotation="-44.0284 -74.005 36.308" nodeId="14"/>
+            <TransformGroup name="spine.004" translation="-7.17204e-14 2.54658e-09 -0.0115955" rotation="-18.67 2.15065e-05 3.5672e-05" nodeId="19">
+              <TransformGroup name="pelvis.L" translation="-6.2003e-09 -2.15367e-09 -8.2655e-09" rotation="-64.35 77.9669 147.673" nodeId="20">
+                <TransformGroup name="thigh.L" translation="0.000395288 -7.05566e-05 -0.0124751" rotation="82.4641 59.7085 123.596" nodeId="21">
+                  <TransformGroup name="leg.L" translation="4.09273e-10 1.3315e-09 -0.0135542" rotation="-19.902 -7.64811 0.524587" nodeId="22">
+                    <TransformGroup name="legBack.L" translation="-3.30986e-10 9.07882e-10 -0.0120794" rotation="91.1013 15.869 -4.81069" nodeId="23">
+                      <TransformGroup name="legBackToe.L" translation="-5.23869e-10 5.38421e-10 -0.00356724" rotation="-1.11808 -0.00204452 4.96256e-05" nodeId="24"/>
+                    </TransformGroup>
+                    <TransformGroup name="legIndex.L" translation="-3.30986e-10 9.07882e-10 -0.0120794" rotation="-93.4483 -15.3115 32.47" nodeId="25">
+                      <TransformGroup name="legIndexToe.L" translation="-1.45519e-10 2.91038e-10 -0.00410246" rotation="4.91508 12.9488 6.28727" nodeId="26"/>
+                    </TransformGroup>
+                    <TransformGroup name="legMiddle.L" translation="-3.30986e-10 9.07882e-10 -0.0120794" rotation="-92.6439 -1.58727 3.55235" nodeId="27">
+                      <TransformGroup name="legMiddleToe.L" translation="-1.06047e-09 3.0559e-10 -0.00342095" rotation="6.4144 2.6065 7.28365" nodeId="28"/>
+                    </TransformGroup>
+                    <TransformGroup name="legPinky.L" translation="-3.30986e-10 9.07882e-10 -0.0120794" rotation="-91.2067 11.0924 -34.285" nodeId="29">
+                      <TransformGroup name="legPinkyToe.L" translation="8.73115e-11 4.07454e-10 -0.00421178" rotation="0.991855 -17.4574 -5.56893" nodeId="30"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+              <TransformGroup name="pelvis.R" translation="-4.61217e-10 -1.71714e-09 -2.3865e-09" rotation="-64.3489 -77.967 -147.674" nodeId="31">
+                <TransformGroup name="thigh.R" translation="-0.000395434 -7.06522e-05 -0.0124751" rotation="82.464 -59.7092 -123.595" nodeId="32">
+                  <TransformGroup name="leg.R" translation="2.36196e-09 1.36788e-09 -0.0135542" rotation="-19.9031 7.64806 -0.524635" nodeId="33">
+                    <TransformGroup name="legBack.R" translation="5.92232e-10 9.09189e-10 -0.0120794" rotation="91.1019 -15.869 4.81051" nodeId="34">
+                      <TransformGroup name="legBackToe.R" translation="5.82077e-11 4.07454e-10 -0.00356724" rotation="-1.11808 0.00204607 -4.34624e-05" nodeId="35"/>
+                    </TransformGroup>
+                    <TransformGroup name="legIndex.R" translation="5.92232e-10 9.09189e-10 -0.0120794" rotation="-103.946 55.1475 -47.889" nodeId="36">
+                      <TransformGroup name="legIndexToe.R" translation="-2.32831e-10 6.40284e-10 -0.00410246" rotation="4.91507 -12.9488 -6.28729" nodeId="37"/>
+                    </TransformGroup>
+                    <TransformGroup name="legMiddle.R" translation="5.92232e-10 9.09189e-10 -0.0120794" rotation="-92.6433 1.58732 -3.55235" nodeId="38">
+                      <TransformGroup name="legMiddleToe.R" translation="-4.91127e-11 1.96451e-10 -0.00342095" rotation="6.4144 -2.6065 -7.28368" nodeId="39"/>
+                    </TransformGroup>
+                    <TransformGroup name="legPinky.R" translation="5.92232e-10 9.09189e-10 -0.0120794" rotation="-91.2062 -11.0927 34.2849" nodeId="40">
+                      <TransformGroup name="legPinkyToe.R" translation="1.89175e-10 3.20142e-10 -0.00421178" rotation="0.991849 17.4574 5.56892" nodeId="41"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+              <TransformGroup name="spine.005" translation="-0.000237556 8.53059e-05 -0.0129617" rotation="-0.654365 -1.91896 -0.89714" nodeId="42">
+                <TransformGroup name="shoulder.L" translation="7.27596e-12 -8.92555e-10 -0.01" rotation="-73.0331 18.9387 54.95" nodeId="43">
+                  <TransformGroup name="Wing.L" translation="3.72529e-09 -4.65661e-09 -0.0197027" rotation="118.4 18.221 -147.204" nodeId="44">
+                    <TransformGroup name="FeatherSecondary.L" translation="0.00516558 0.00429121 -0.0117098" rotation="-101.3 -66.333 142.909" nodeId="45"/>
+                    <TransformGroup name="WingEnd.L" translation="8.03266e-09 3.46336e-08 -0.0172305" rotation="-1.05695 -10.1328 4.16614" nodeId="46">
+                      <TransformGroup name="FeatherPrimary.L" translation="0.00647459 0.00159702 -0.00630482" rotation="51.0056 -57.5711 -20.6908" nodeId="47"/>
+                      <TransformGroup name="FeatherTip.L" translation="0.000644599 -7.45669e-05 -0.0120426" rotation="10.2488 -9.47366 -3.12287" nodeId="48"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+                <TransformGroup name="shoulder.R" translation="7.27596e-12 -8.92555e-10 -0.01" rotation="-76.3594 -16.8825 -52.514" nodeId="49">
+                  <TransformGroup name="Wing.R" translation="-1.39698e-09 5.12227e-09 -0.019842" rotation="118.033 -18.075 147.613" nodeId="50">
+                    <TransformGroup name="FeatherSecondary.R" translation="-0.00516558 0.0042912 -0.0117098" rotation="-101.3 66.333 -142.909" nodeId="51"/>
+                    <TransformGroup name="WingEnd.R" translation="-4.77303e-09 9.11677e-09 -0.0172305" rotation="-1.05703 10.1327 -4.16636" nodeId="52">
+                      <TransformGroup name="FeatherPrimary.R" translation="-0.0064746 0.00159702 -0.00630483" rotation="51.0057 57.5711 20.6911" nodeId="53"/>
+                      <TransformGroup name="FeatherTip.R" translation="-0.000644612 -7.45362e-05 -0.0120426" rotation="10.2488 9.47366 3.12311" nodeId="54"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+                <TransformGroup name="spine.006" translation="-0.000847406 -0.000256363 -0.0121404" rotation="-17.8102 1.90836 0.919454" nodeId="55">
+                  <TransformGroup name="neck.001" translation="-0.000351458 -6.89896e-06 -0.00536404" rotation="-5.94312 -1.43156 1.19111" nodeId="56">
+                    <TransformGroup name="neck.002" translation="0.000173308 8.89115e-05 -0.00456539" rotation="-9.81948 -1.93878 -7.22615" nodeId="57">
+                      <TransformGroup name="head" translation="0.00029676 0.000269705 -0.00743234" rotation="49.9438 2.1161 6.49171" nodeId="58">
+                        <TransformGroup name="beak.001.T" translation="-0.000241267 0.000637483 -0.0204841" rotation="15.6101 -3.34807 8.02232" nodeId="59"/>
+                        <TransformGroup name="beak_001.B" translation="-4.68107e-06 0.00119684 -0.0203351" rotation="19.4795 0.322329 -0.0664339" nodeId="60"/>
+                      </TransformGroup>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+            </TransformGroup>
           </TransformGroup>
-          <TransformGroup name="leftBody" translation="0 1.17197e-09 -0.0155233" rotation="-152.593 62.924 -156.911" nodeId="15">
-            <TransformGroup name="leftLeg" translation="7.27596e-12 6.40284e-10 -0.00563678" rotation="-26.7985 62.2585 -16.3739" nodeId="16"/>
-          </TransformGroup>
-          <TransformGroup name="rightBody" translation="0 1.17197e-09 -0.0155233" rotation="-174.888 -68.314 -177.223" nodeId="17">
-            <TransformGroup name="rightLeg" translation="-8.80391e-10 3.7835e-10 -0.00652203" rotation="-5.20263 -67.6046 3.48449" nodeId="18"/>
-          </TransformGroup>
+          <Shape shapeId="1" name="bird_eyes_vis" rotation="-6.83019e-06 -0 0" nodeId="61" materialIds="4" skinBindNodeIds="57 58 59 16 17 18 19 42 43 44 46 47 48 45 55 56 60 49 50 52 53 54 51 20 31 21 22 27 28 23 24 25 26 29 30 32 33 38 39 34 35 36 37 40 41"/>
+          <Shape shapeId="2" name="bird_vis" rotation="-6.83019e-06 -0 0" nodeId="62" materialIds="4" skinBindNodeIds="16 17 18 19 42 43 44 46 47 48 45 55 56 57 58 59 60 49 50 52 53 54 51 20 31 21 22 27 28 23 24 25 26 29 30 32 33 38 39 34 35 36 37 40 41"/>
+          <Shape shapeId="3" name="bird_wings_vis" rotation="-6.83019e-06 -0 0" nodeId="63" materialIds="5" skinBindNodeIds="18 19 44 46 47 48 45 50 52 53 54 51 16 17 42 43 55 56 57 58 59 60 49 20 31 21 22 27 28 23 24 25 26 29 30 32 33 38 39 34 35 36 37 40 41"/>
         </TransformGroup>
-        <Shape shapeId="1" name="bird" rotation="-6.83019e-06 0 0" nodeId="19" materialIds="4" skinBindNodeIds="8 15 16 17 18 9 10 12 13 11 14"/>
+        <TransformGroup name="flyBird" rotation="-1.61649e-05 -0 0" nodeId="64">
+          <TransformGroup name="spine.003" translation="8.29552e-08 0.0256221 -0.0112843" rotation="159.224 -0.000431125 -2.61556e-05" nodeId="65">
+            <TransformGroup name="spine.002" translation="5.49898e-11 0.000112648 0.000250374" rotation="-179.169 1.05956e-07 -3.52654e-05" nodeId="66">
+              <TransformGroup name="spine.001" translation="1.77636e-15 9.31712e-10 -0.0114482" rotation="14.8712 -4.69124e-08 -7.11351e-06" nodeId="67"/>
+            </TransformGroup>
+            <TransformGroup name="spine.004" translation="-9.34808e-14 1.45418e-11 -0.0115955" rotation="-18.67 2.15066e-05 3.56739e-05" nodeId="68">
+              <TransformGroup name="pelvis.L" translation="-8.26701e-09 2.91041e-09 -1.36788e-08" rotation="-64.35 77.9669 147.673" nodeId="69">
+                <TransformGroup name="thigh.L" translation="0.000395286 -7.05591e-05 -0.0124751" rotation="101.621 50.9252 104" nodeId="70">
+                  <TransformGroup name="leg.L" translation="-5.52973e-10 6.98492e-10 -0.0135542" rotation="20.5243 -20.9705 0.833059" nodeId="71">
+                    <TransformGroup name="legBack.L" translation="-4.65661e-10 1.39698e-09 -0.0120794" rotation="13.7606 16.9539 -31.0597" nodeId="72">
+                      <TransformGroup name="legBackToe.L" translation="8.14907e-10 -2.32831e-09 -0.00356724" rotation="-1.11811 -0.00205717 6.38729e-05" nodeId="73"/>
+                    </TransformGroup>
+                    <TransformGroup name="legIndex.L" translation="-4.65661e-10 1.39698e-09 -0.0120794" rotation="33.3514 -41.6721 -54.9489" nodeId="74">
+                      <TransformGroup name="legIndexToe.L" translation="-2.32831e-09 -2.09548e-09 -0.00410246" rotation="4.91505 12.9488 6.28729" nodeId="75"/>
+                    </TransformGroup>
+                    <TransformGroup name="legMiddle.L" translation="-4.65661e-10 1.39698e-09 -0.0120794" rotation="-5.83955 -22.7261 -18.392" nodeId="76">
+                      <TransformGroup name="legMiddleToe.L" translation="1.10595e-09 -1.74623e-09 -0.00342095" rotation="6.41438 2.60649 7.28366" nodeId="77"/>
+                    </TransformGroup>
+                    <TransformGroup name="legPinky.L" translation="-4.65661e-10 1.39698e-09 -0.0120794" rotation="8.33138 13.3931 -4.98978" nodeId="78">
+                      <TransformGroup name="legPinkyToe.L" translation="1.92085e-09 -2.56114e-09 -0.00421178" rotation="0.991859 -17.4574 -5.56893" nodeId="79"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+              <TransformGroup name="pelvis.R" translation="-6.14904e-10 -2.44474e-09 -1.12923e-08" rotation="-64.3489 -77.967 -147.674" nodeId="80">
+                <TransformGroup name="thigh.R" translation="-0.000395429 -7.06527e-05 -0.0124751" rotation="101.621 -50.9259 -103.998" nodeId="81">
+                  <TransformGroup name="leg.R" translation="-1.45519e-10 5.23869e-09 -0.0135542" rotation="20.5232 20.9704 -0.833374" nodeId="82">
+                    <TransformGroup name="legBack.R" translation="-4.65661e-10 2.32831e-10 -0.0120794" rotation="13.761 -16.9541 31.0595" nodeId="83">
+                      <TransformGroup name="legBackToe.R" translation="8.73115e-10 3.95812e-09 -0.00356724" rotation="-1.11806 0.00204031 -7.28642e-05" nodeId="84"/>
+                    </TransformGroup>
+                    <TransformGroup name="legIndex.R" translation="-4.65661e-10 2.32831e-10 -0.0120794" rotation="86.4848 37.1378 81.2291" nodeId="85">
+                      <TransformGroup name="legIndexToe.R" translation="-2.32831e-10 1.39698e-09 -0.00410246" rotation="4.9151 -12.9488 -6.28726" nodeId="86"/>
+                    </TransformGroup>
+                    <TransformGroup name="legMiddle.R" translation="-4.65661e-10 2.32831e-10 -0.0120794" rotation="-5.83896 22.7259 18.3922" nodeId="87">
+                      <TransformGroup name="legMiddleToe.R" translation="-2.09548e-09 2.32831e-10 -0.00342095" rotation="6.41441 -2.60647 -7.28368" nodeId="88"/>
+                    </TransformGroup>
+                    <TransformGroup name="legPinky.R" translation="-4.65661e-10 2.32831e-10 -0.0120794" rotation="8.33195 -13.3931 4.98963" nodeId="89">
+                      <TransformGroup name="legPinkyToe.R" translation="-3.72529e-09 -3.49246e-09 -0.00421178" rotation="0.991893 17.4574 5.56894" nodeId="90"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+              <TransformGroup name="spine.005" translation="-0.000237556 8.53054e-05 -0.0129617" rotation="17.8509 -0.999657 -0.4043" nodeId="91">
+                <TransformGroup name="shoulder.L" translation="7.63976e-11 -2.5963e-09 -0.00999999" rotation="-73.0331 18.9387 54.95" nodeId="92">
+                  <TransformGroup name="Wing.L" translation="9.31323e-10 1.39698e-09 -0.0197027" rotation="51.5881 20.4187 -133.781" nodeId="93">
+                    <TransformGroup name="FeatherSecondary.L" translation="0.00516559 0.00429122 -0.0117098" rotation="-101.3 -66.333 142.909" nodeId="94"/>
+                    <TransformGroup name="WingEnd.L" translation="1.25729e-08 4.74975e-08 -0.0172305" rotation="-1.05697 -10.1328 4.16613" nodeId="95">
+                      <TransformGroup name="FeatherPrimary.L" translation="0.0064746 0.001597 -0.00630483" rotation="51.0056 -57.5711 -20.6908" nodeId="96"/>
+                      <TransformGroup name="FeatherTip.L" translation="0.000644602 -7.45766e-05 -0.0120426" rotation="10.2488 -9.47366 -3.12287" nodeId="97"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+                <TransformGroup name="shoulder.R" translation="7.63976e-11 -2.5963e-09 -0.00999999" rotation="-76.3594 -16.8826 -52.5139" nodeId="98">
+                  <TransformGroup name="Wing.R" translation="-1.86265e-09 1.86265e-09 -0.019842" rotation="51.1899 -20.3569 134.215" nodeId="99">
+                    <TransformGroup name="FeatherSecondary.R" translation="-0.00516558 0.0042912 -0.0117098" rotation="-101.3 66.333 -142.909" nodeId="100"/>
+                    <TransformGroup name="WingEnd.R" translation="-6.75209e-09 1.16415e-08 -0.0172305" rotation="-1.05705 10.1327 -4.16635" nodeId="101">
+                      <TransformGroup name="FeatherPrimary.R" translation="-0.00647461 0.00159702 -0.00630485" rotation="51.0057 57.5711 20.6911" nodeId="102"/>
+                      <TransformGroup name="FeatherTip.R" translation="-0.000644614 -7.45277e-05 -0.0120426" rotation="10.2488 9.47367 3.1231" nodeId="103"/>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+                <TransformGroup name="spine.006" translation="-0.000847406 -0.00025636 -0.0121403" rotation="-2.84632 3.26907 3.68362" nodeId="104">
+                  <TransformGroup name="neck.001" translation="-0.000351457 -6.90403e-06 -0.00536404" rotation="-5.94315 -1.43156 1.19111" nodeId="105">
+                    <TransformGroup name="neck.002" translation="0.000173308 8.89215e-05 -0.00456541" rotation="-9.81946 -1.93877 -7.22615" nodeId="106">
+                      <TransformGroup name="head" translation="0.000296761 0.000269689 -0.00743235" rotation="38.7473 -1.44605 7.89981" nodeId="107">
+                        <TransformGroup name="beak.001.T" translation="-0.000241269 0.00063747 -0.0204841" rotation="15.6101 -3.34806 8.02241" nodeId="108"/>
+                        <TransformGroup name="beak_001.B" translation="-4.68502e-06 0.00119683 -0.020335" rotation="19.4795 0.32234 -0.0663407" nodeId="109"/>
+                      </TransformGroup>
+                    </TransformGroup>
+                  </TransformGroup>
+                </TransformGroup>
+              </TransformGroup>
+            </TransformGroup>
+          </TransformGroup>
+          <Shape shapeId="4" name="bird_eyes_vis" translation="-8.9407e-10 6.51926e-10 -2.68221e-09" rotation="-7.1034e-06 4.43962e-07 -4.61038e-07" nodeId="110" materialIds="4" skinBindNodeIds="106 107 108"/>
+          <Shape shapeId="5" name="bird_vis" translation="-8.9407e-10 6.51926e-10 -2.68221e-09" rotation="-7.1034e-06 4.43962e-07 -4.61038e-07" nodeId="111" materialIds="4" skinBindNodeIds="65 66 67 68 91 104 105 106 107 108 109 98 99 101 100 92 93 95 94 69 70 71 76 77 72 73 74 75 78 79 80 81 82 87 88 83 84 85 86 89 90"/>
+          <Shape shapeId="6" name="bird_wings_vis" translation="-8.9407e-10 6.51926e-10 -2.68221e-09" rotation="-7.1034e-06 4.43962e-07 -4.61038e-07" nodeId="112" materialIds="5" skinBindNodeIds="67 68 91 99 101 102 103 100 93 95 96 97 94 70 71 76 77 72 73 74 75 78 79 81 82 87 88 83 84 85 86 89 90"/>
+        </TransformGroup>
       </TransformGroup>
   </Scene>
 

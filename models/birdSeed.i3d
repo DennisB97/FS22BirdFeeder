@@ -6,11 +6,19 @@
   </Asset>
 
   <Files>
+    <File fileId="2" filename="textures/birdSeed_diffuse.dds"/>
+    <File fileId="3" filename="textures/birdSeed_normal.dds"/>
+    <File fileId="4" filename="textures/birdSeed_specular.dds"/>
   </Files>
 
 
   <Materials>
-    <Material name="Material" materialId="4" diffuseColor="0.8 0.8 0.8 1" emissiveColor="0 0 0 1" specularColor="0.8 1 0.8">
+    <Material name="birdSeed_mat" materialId="16">
+      <Texture fileId="2"/>
+      <Normalmap fileId="3"/>
+      <Glossmap fileId="4"/>
+    </Material>
+    <Material name="default" materialId="5" diffuseColor="0.494118 0.494118 0.494118 1">
     </Material>
   </Materials>
 
@@ -23,9 +31,9 @@
   </Dynamics>
 
   <Scene>
-      <Shape shapeId="1" name="birdSeed" translation="4.42701e-15 0 -2.35159e-08" rotation="1.28066e-05 3.81667e-14 2.79889e-12" dynamic="true" collisionMask="27275530" staticFriction="1" dynamicFriction="1" angularDamping="0.95" density="0.3" clipDistance="100" nodeId="8" materialIds="4" castsShadows="true" receiveShadows="true" nonRenderable="true">
-        <Shape shapeId="2" name="birdSeed_vis" clipDistance="100" nodeId="9" materialIds="4" castsShadows="true" receiveShadows="true">
-          <TransformGroup name="dischargeNode" translation="0 0.122097 0" rotation="0 0 180" nodeId="10"/>
+      <Shape shapeId="1" name="birdSeed" rotation="-6.83019e-06 -0 0" dynamic="true" collisionMask="27275530" staticFriction="1" dynamicFriction="1" angularDamping="0.2" clipDistance="300" nodeId="20" materialIds="5" castsShadows="true" receiveShadows="true" nonRenderable="true">
+        <Shape shapeId="2" name="birdSeed_low_vis" rotation="-6.83019e-06 -0 0" clipDistance="300" nodeId="21" materialIds="16" castsShadows="true" receiveShadows="true">
+          <TransformGroup name="dischargeNode" nodeId="11"/>
         </Shape>
       </Shape>
   </Scene>

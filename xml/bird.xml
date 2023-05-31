@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" standalone="no" ?>
+<bird>
+    <general birdNode="birdNode" standBirdNode="standBirdNode" flyBirdNode="flyBirdNode" birdSkeleton="birdSkeleton" birdFlySkeleton="birdFlySkeleton" eatPerHour="4" minLandTryTime="120" maxLandTryTime="240" minPathLength="150" minSingDelay="20" maxSingDelay="260" singNightLimitStart="20" singNightLimitEnd="7"  />
+    <animations flyAnimation="fly" eatAnimation="eat" idleAnimation="idle" />
+    <sounds>
+        <sing file="sounds/birdSing.ogg" linkNode="birdAudioNode" outerRadius="60" innerRadius="2" loops="1" supportsReverb="true" isLocalSound="false" debug="false">
+            <randomization minVolume="0.5" maxVolume="0.8" minPitch="-0.01" maxPitch="0.01" />
+        </sing>
+    </sounds>
+
+    <i3dMappings>
+        <i3dMapping id="birdNode" node="0>" />
+        <i3dMapping id="birdAudioNode" node="0>0" />
+        <i3dMapping id="standBirdNode" node="0>1" />
+        <i3dMapping id="birdSkeleton" node="0>1|0" />
+        <i3dMapping id="birdFlySkeleton" node="0>2|0" />
+        <i3dMapping id="flyBirdNode" node="0>2" />
+    </i3dMappings>
+</bird>

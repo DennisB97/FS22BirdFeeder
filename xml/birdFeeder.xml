@@ -35,6 +35,9 @@
         <testAreas>
             <testArea startNode="testArea1Start" endNode="testArea1End" />
         </testAreas>
+        <sounds>
+            <place template="smallImp" pitchScale="1.6"/>
+        </sounds>
     </placement>
 
     <clearAreas>
@@ -47,8 +50,7 @@
         </levelAreas>
     </leveling>
 
-
-    <placeableFeeder>
+    <placeableFeeder fillPlaneNode="fillPlane" scareTriggerNode="birdScareTrigger">
         <storage fillTypes="BIRDSEED" capacity="1000" isExtension="false" fillLevelSyncThreshold="1">
             <startFillLevel fillType="BIRDSEED" fillLevel="0" />
             <fillPlane fillType="BIRDSEED" node="fillPlane" minY="1.8238" maxY="1.832" changeVisibility="true" />
@@ -57,41 +59,34 @@
             <unloadTrigger exactFillRootNode="unloadTrigger" fillTypes="BIRDSEED"/>
         </unloadingStation>
 
-        <birds node="birdsNode" maxNumberBirds="3" >
-            <bird index="0>0" flyAnimation="fly" eatAnimation="eat" maxFlyRadius="10" leaveDistance="100" noFoodHoursLeave="5"  />
+        <birds eatPosition1="birdEatPosition1" eatPosition2="birdEatPosition2" eatPosition3="birdEatPosition3" maxNumberBirds="3" maxHoursToSpawn="24" maxHoursToLeave="10" flyRadius="40">
+            <files xmlFilePath="xml/bird.xml" i3dFilePath="models/bird.i3d" />
         </birds>
     </placeableFeeder>
 
-    <!-- <indoorAreas/> -->
-
-    <!-- <tipOcclusionUpdateAreas> -->
-        <!-- <tipOcclusionUpdateArea startNode="tipOcclusionUpdateArea1Start" endNode="tipOcclusionUpdateArea1End" /> -->
-    <!-- </tipOcclusionUpdateAreas> -->
-
     <infoTrigger triggerNode="infoTrigger"/>
 
+    <tipOcclusionUpdateAreas>
+        <tipOcclusionUpdateArea startNode="tipOcclusionUpdateArea1Start" endNode="tipOcclusionUpdateArea1End" />
+    </tipOcclusionUpdateAreas>
 
-    <!-- <ai> -->
-        <!-- <updateAreas> -->
-            <!-- <updateArea startNode="tipOcclusionUpdateArea1Start" endNode="tipOcclusionUpdateArea1End" /> -->
-        <!-- </updateAreas> -->
-    <!-- </ai> -->
-
-    <hotspots>
-        <hotspot type="LOADING" linkNode="mapPosition" teleportNode="teleportPosition" />
-    </hotspots>
 
     <i3dMappings>
+        <i3dMapping id="birdFeeder" node="0>" />
         <i3dMapping id="birdFeeder_vis" node="0>0" />
-        <!-- <i3dMapping id="birdFeeder_col" node="0>5|0" /> -->
+        <i3dMapping id="birdFeeder_col" node="0>5|0" />
         <i3dMapping id="unloadingStation" node="0>1|2" />
         <i3dMapping id="storage" node="0>1|0" />
         <i3dMapping id="mapPosition" node="0>1|1" />
         <i3dMapping id="teleportPosition" node="0>1|4" />
         <i3dMapping id="fillPlane" node="0>1|5" />
+        <i3dMapping id="birdEatPosition1" node="0>1|6|0" />
+        <i3dMapping id="birdEatPosition2" node="0>1|6|1" />
+        <i3dMapping id="birdEatPosition3" node="0>1|6|2" />
         <i3dMapping id="unloadingStation" node="0>1|2" />
         <i3dMapping id="unloadTrigger" node="0>1|2|0" />
         <i3dMapping id="infoTrigger" node="0>1|3" />
+        <i3dMapping id="birdScareTrigger" node="0>1|7" />
         <i3dMapping id="birdsNode" node="0>1|4" />
         <i3dMapping id="clearArea1Start" node="0>2|0" />
         <i3dMapping id="clearArea1Width" node="0>2|0|0" />

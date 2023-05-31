@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
-     <texts>
+    <texts>
 		<text name="fillType_birdSeed" text="Vogelfutter" />
-		<text name="fillType_birdSeed1" text="Vogelfutter 1kg" />
-		<text name="fillType_birdSeed2" text="Vogelfutter 2kg" />
-		<text name="fillType_birdSeed5" text="Vogelfutter 5kg" />
-        <text name="function_birdFeeder" text="Platzierbarer Vogelhäuschen, denken Sie daran, Vogelfutter zu kaufen und zum Futterhäuschen zu tragen, und beobachten Sie, wie die Vögel kommen und fressen.">
+		<text name="fillType_birdSeed2" text="Vogelfutter 2Kg" />
+        <text name="birdFeeder_noAccess" text="Vögel kommen nicht an Ihrem Vogelhäuschen an, bitte stellen Sie es in einen offeneren Bereich"/>
+        <text name="birdFeeder_infoNoAccess" text="ZUFÜHRER BEWEGEN"/>
+        <text name="birdFeeder_infoNoAccessTitle" text="UNGÜLTIGE PLATZIERUNG"/>
+        <text name="function_birdFeeder" text="Platzierbarer Vogelhäuschen, denken Sie daran, Vogelfutter zu kaufen und zum Futterhäuschen zu tragen, und beobachten Sie, wie die Vögel kommen und fressen."/>
         <text name="typeDesc_birdSeed" text="Futter für Vögel, fügen Sie dieses Futter in das Vogelhäuschen hinzu, das Sie bei den Placeables gekauft haben." />
         <text name="unit_gramShort" text="g" />
-	</texts>
 	</texts>
 </l10n>

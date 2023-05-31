@@ -5,13 +5,12 @@ CustomDischarge = {}
 CustomDischarge.className = "CustomDischarge"
 
 
----Checks if all prerequisite specializations are loaded
+---Checks if all prerequisite specializations are loaded, in this case the Dischargable is needed.
 -- @param table specializations specializations
 -- @return boolean hasPrerequisite true if all prerequisite specializations are loaded
 function CustomDischarge.prerequisitesPresent(specializations)
     return SpecializationUtil.hasSpecialization(Dischargeable, specializations)
 end
-
 
 ---Init specialization by registering some xml paths for properties for new custom ray direction
 function CustomDischarge.initSpecialization()
@@ -26,10 +25,7 @@ function CustomDischarge.initSpecialization()
     schema:register(XMLValueType.BOOL,"vehicle.customDischarge#bUseCustomDirection", "bool for in case using a custom world direction")
     -- Or this option but not both
     schema:register(XMLValueType.BOOL,"vehicle.customDischarge#bUseCustomNodeDirection", "bool for in case using a custom node relative direction")
-
-
 end
-
 
 ---Register overwritten functions
 function CustomDischarge.registerOverwrittenFunctions(vehicleType)
@@ -54,19 +50,14 @@ function CustomDischarge:onLoad(savegame)
     spec.customDirectionZ = xmlFile:getValue("vehicle.customDischarge#customDirectionZ")
 
     if spec.bCustomDirection == nil and spec.bCustomNodeDirection == nil or spec.customDirectionX == nil and spec.customDirectionY == nil and spec.customDirectionZ == nil then
-        Logging.warning("onLoad() Why is customDischarge specialization being used, no custom direction being used.")
+        Logging.warning("CustomDischarge:onLoad: Why is customDischarge specialization being used, no custom direction being used.")
         return
     end
-
-
-
-
 
 end
 
 ---Overridden discharge function, doesn't call base function because this one overrides the ray direction
 function CustomDischarge:CustomDischargeRaycast(superFunc,dischargeNode)
-
     local spec = self.spec_dischargeable
 
     local raycast = dischargeNode.raycast
@@ -87,8 +78,6 @@ function CustomDischarge:CustomDischargeRaycast(superFunc,dischargeNode)
     local x,y,z = getWorldTranslation(raycast.node)
     y = y + raycast.yOffset
 
-
-
     -- Custom code start --
      local specCustom = self.spec_customDischarge
 
@@ -102,7 +91,7 @@ function CustomDischarge:CustomDischargeRaycast(superFunc,dischargeNode)
         zDirection = tonumber(specCustom.customDirectionZ) or 0
 
     elseif specCustom.bCustomNodeDirection == true then
-        xDirection, yDirection, zDirection = localDirectionToWorld(raycast.node, tonumber(specCustom.customDirectionX) or 0,tonumber(specCustom.customDirectionY) or 0,tonumber(specCustom.customDirectionZ) or 0)
+        xDirection, yDirection, zDirection = localDirectionToWorld(raycast.node, tonumber(specCustom.customDirectionX) or 0,tonumber(specCustom.customDirectionY) or -1,tonumber(specCustom.customDirectionZ) or 0)
     end
 
     -- Custom code end --
