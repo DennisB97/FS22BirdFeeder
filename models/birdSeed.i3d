@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
-<i3D name="woolPallet" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+<i3D name="birdSeed.i3d" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
   <Asset>
-    <Export program="GIANTS Editor 64bit" version="9.0.3"/>
+    <Export program="GIANTS Editor 64bit" version="9.0.4"/>
   </Asset>
 
   <Files>
@@ -13,12 +13,12 @@
 
 
   <Materials>
-    <Material name="birdSeed_mat" materialId="16">
+    <Material name="birdSeed_mat" materialId="160">
       <Texture fileId="2"/>
       <Normalmap fileId="3"/>
       <Glossmap fileId="4"/>
     </Material>
-    <Material name="default" materialId="5" diffuseColor="0.494118 0.494118 0.494118 1">
+    <Material name="default" materialId="161" diffuseColor="0.494118 0.494118 0.494118 1">
     </Material>
   </Materials>
 
@@ -31,9 +31,9 @@
   </Dynamics>
 
   <Scene>
-      <Shape shapeId="1" name="birdSeed" rotation="-6.83019e-06 -0 0" dynamic="true" collisionMask="27275530" staticFriction="1" dynamicFriction="1" angularDamping="0.2" clipDistance="300" nodeId="20" materialIds="5" castsShadows="true" receiveShadows="true" nonRenderable="true">
-        <Shape shapeId="2" name="birdSeed_low_vis" rotation="-6.83019e-06 -0 0" clipDistance="300" nodeId="21" materialIds="16" castsShadows="true" receiveShadows="true">
-          <TransformGroup name="dischargeNode" nodeId="11"/>
+      <Shape shapeId="1" name="birdSeed" rotation="-6.83019e-06 -0 0" dynamic="true" collisionMask="27275530" staticFriction="1" dynamicFriction="1" angularDamping="0.2" clipDistance="200" nodeId="165" materialIds="161" castsShadows="true" receiveShadows="true" nonRenderable="true">
+        <Shape shapeId="2" name="birdSeed_low_vis" rotation="-6.83019e-06 -0 0" clipDistance="200" nodeId="166" materialIds="160" castsShadows="true" receiveShadows="true">
+          <TransformGroup name="dischargeNode" nodeId="167"/>
         </Shape>
       </Shape>
   </Scene>

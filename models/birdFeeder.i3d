@@ -1,32 +1,30 @@
 <?xml version="1.0" encoding="iso-8859-1"?>
 
-<i3D name="birdFeeder" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
+<i3D name="birdFeeder.i3d" version="1.6" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://i3d.giants.ch/schema/i3d-1.6.xsd">
   <Asset>
-    <Export program="GIANTS Editor 64bit" version="9.0.3"/>
+    <Export program="GIANTS Editor 64bit" version="9.0.4"/>
   </Asset>
 
   <Files>
     <File fileId="1" filename="textures/birdFeeder_mat_diffuse.dds"/>
     <File fileId="2" filename="textures/birdFeeder_mat_normal.dds"/>
     <File fileId="3" filename="textures/birdFeeder_mat_specular.dds"/>
-    <File fileId="5" filename="textures/seeds_diffuse.DDS"/>
-    <File fileId="6" filename="textures/seeds_normal.DDS"/>
+    <File fileId="5" filename="textures/seeds_diffuse.dds"/>
+    <File fileId="6" filename="textures/seeds_normal.dds"/>
   </Files>
 
 
   <Materials>
-    <Material name="birdFeeder_fillPlane_mat" materialId="117" specularColor="0.494118 1 0">
+    <Material name="birdFeeder_fillPlane_mat" materialId="5" specularColor="0.494118 1 0">
       <Texture fileId="5"/>
       <Normalmap fileId="6"/>
     </Material>
-    <Material name="birdFeeder_mat" materialId="118">
+    <Material name="birdFeeder_mat" materialId="6">
       <Texture fileId="1"/>
       <Normalmap fileId="2"/>
       <Glossmap fileId="3"/>
     </Material>
-    <Material name="Material" materialId="119" diffuseColor="0.8 0.8 0.8 1" specularColor="0.494118 1 0">
-    </Material>
-    <Material name="UnnamedMaterial" materialId="120" diffuseColor="1 1 1 1">
+    <Material name="UnnamedMaterial" materialId="7" diffuseColor="1 1 1 1">
     </Material>
   </Materials>
 
@@ -39,51 +37,51 @@
   </Dynamics>
 
   <Scene>
-      <TransformGroup name="birdFeeder" clipDistance="500" nodeId="126">
-        <TransformGroup name="birdFeeder_vis" nodeId="127">
-          <TransformGroup name="LOD0" nodeId="128">
-            <Shape shapeId="1" name="birdFeeder_vis" clipDistance="200" nodeId="129" materialIds="118" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
+      <TransformGroup name="birdFeeder" clipDistance="500" nodeId="13">
+        <TransformGroup name="birdFeeder_vis" nodeId="14">
+          <TransformGroup name="LOD0" nodeId="15">
+            <Shape shapeId="1" name="birdFeeder_vis" clipDistance="200" nodeId="16" materialIds="6" castsShadows="true" receiveShadows="true" distanceBlending="false"/>
           </TransformGroup>
         </TransformGroup>
-        <TransformGroup name="misc" nodeId="130">
-          <TransformGroup name="storage" nodeId="131"/>
-          <TransformGroup name="mapPosition" scale="0.999988 0.999988 0.999988" nodeId="132"/>
-          <TransformGroup name="unloadingStation" nodeId="133">
-            <Shape shapeId="2" name="unloadingTrigger" translation="0 2.768 0" scale="1.5 1 1.5" static="true" trigger="true" collisionMask="1082130432" clipDistance="100" nodeId="134" materialIds="120" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+        <TransformGroup name="misc" nodeId="17">
+          <TransformGroup name="storage" nodeId="18"/>
+          <TransformGroup name="mapPosition" scale="0.999988 0.999988 0.999988" nodeId="19"/>
+          <TransformGroup name="unloadingStation" nodeId="20">
+            <Shape shapeId="2" name="unloadingTrigger" translation="0 2.768 0" scale="1.5 1 1.5" static="true" trigger="true" collisionMask="1082130432" clipDistance="100" nodeId="21" materialIds="7" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
           </TransformGroup>
-          <Shape shapeId="2" name="infotrigger" translation="0 1.417 0" scale="3.74698 3.023 3.33361" static="true" trigger="true" collisionMask="1048576" clipDistance="100" nodeId="135" materialIds="120" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
-          <TransformGroup name="teleportPosition" translation="0.814017 0 0.481114" nodeId="136"/>
-          <Shape shapeId="3" name="birdFeeder_fillPlane" translation="0 1.81 0" rotation="-6.83019e-06 -0 0" visibility="false" nodeId="137" materialIds="117"/>
-          <TransformGroup name="birdEatPositions" translation="0 1.82237 0" nodeId="138">
-            <TransformGroup name="birdEatPosition1" translation="-0.155 0 -0.155" nodeId="139"/>
-            <TransformGroup name="birdEatPosition2" translation="-0.155 0 0.155" nodeId="140"/>
-            <TransformGroup name="birdEatPosition3" translation="0.155 0 0.155" nodeId="141"/>
+          <Shape shapeId="2" name="infotrigger" translation="0 1.417 0" scale="3.74698 3.023 3.33361" static="true" trigger="true" collisionMask="1048576" clipDistance="100" nodeId="22" materialIds="7" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+          <TransformGroup name="teleportPosition" translation="0.814017 0 0.481114" nodeId="23"/>
+          <Shape shapeId="3" name="birdFeeder_fillPlane" translation="0 1.81 0" rotation="-6.83019e-06 -0 0" visibility="false" nodeId="24" materialIds="5"/>
+          <TransformGroup name="birdEatPositions" translation="0 1.82237 0" nodeId="25">
+            <TransformGroup name="birdEatPosition1" translation="-0.155 0 -0.155" nodeId="26"/>
+            <TransformGroup name="birdEatPosition2" translation="-0.155 0 0.155" nodeId="27"/>
+            <TransformGroup name="birdEatPosition3" translation="0.155 0 0.155" nodeId="28"/>
           </TransformGroup>
-          <Shape shapeId="2" name="birdScareTrigger" translation="0 1.90278 0" scale="4 4 4" static="true" trigger="true" collisionMask="1048576" nodeId="142" materialIds="120" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
+          <Shape shapeId="2" name="birdScareTrigger" translation="0 1.90278 0" scale="4 4 4" static="true" trigger="true" collisionMask="1048576" nodeId="29" materialIds="7" castsShadows="true" receiveShadows="true" nonRenderable="true"/>
         </TransformGroup>
-        <TransformGroup name="clearAreas" nodeId="143">
-          <TransformGroup name="clearArea1Start" translation="-0.3 0 -0.3" nodeId="144">
-            <TransformGroup name="clearArea1Width" translation="3.64539e-05 0 0.988847" nodeId="145"/>
-            <TransformGroup name="clearArea1Height" translation="0.953035 0 4.27541e-07" nodeId="146"/>
-          </TransformGroup>
-        </TransformGroup>
-        <TransformGroup name="testAreas" nodeId="147">
-          <TransformGroup name="testArea1Start" translation="-0.3 0 -0.3" nodeId="148">
-            <TransformGroup name="testArea1End" translation="0.559023 2.13031 0.555811" nodeId="149"/>
+        <TransformGroup name="clearAreas" nodeId="30">
+          <TransformGroup name="clearArea1Start" translation="-0.3 0 -0.3" nodeId="31">
+            <TransformGroup name="clearArea1Width" translation="3.64539e-05 0 0.988847" nodeId="32"/>
+            <TransformGroup name="clearArea1Height" translation="0.953035 0 4.27541e-07" nodeId="33"/>
           </TransformGroup>
         </TransformGroup>
-        <TransformGroup name="tipOcclusionUpdateAreas" nodeId="150">
-          <TransformGroup name="tipOcclusionUpdateArea1Start" translation="-0.3 0 -0.3" nodeId="151">
-            <TransformGroup name="tipOcclusionUpdateArea1End" translation="0.592688 0 0.576611" nodeId="152"/>
+        <TransformGroup name="testAreas" nodeId="34">
+          <TransformGroup name="testArea1Start" translation="-0.3 0 -0.3" nodeId="35">
+            <TransformGroup name="testArea1End" translation="0.559023 2.13031 0.555811" nodeId="36"/>
           </TransformGroup>
         </TransformGroup>
-        <TransformGroup name="collisions" nodeId="153">
-          <Shape shapeId="4" name="birdFeeder_col" rotation="-6.83019e-06 -0 0" visibility="false" static="true" clipDistance="200" nodeId="154" materialIds="119" nonRenderable="true"/>
+        <TransformGroup name="tipOcclusionUpdateAreas" nodeId="37">
+          <TransformGroup name="tipOcclusionUpdateArea1Start" translation="-0.3 0 -0.3" nodeId="38">
+            <TransformGroup name="tipOcclusionUpdateArea1End" translation="0.592688 0 0.576611" nodeId="39"/>
+          </TransformGroup>
         </TransformGroup>
-        <TransformGroup name="levelAreas" nodeId="155">
-          <TransformGroup name="levelAreaStart" translation="2.161 0 1.68" nodeId="156"/>
-          <TransformGroup name="levelAreaWidth" translation="-2.161 0 1.68" nodeId="157"/>
-          <TransformGroup name="levelAreaHeight" translation="2.161 0 -1.68" nodeId="158"/>
+        <TransformGroup name="collisions" nodeId="40">
+          <Shape shapeId="4" name="birdFeeder_col" rotation="-6.83019e-06 -0 0" visibility="false" static="true" clipDistance="200" nodeId="41" materialIds="7" nonRenderable="true"/>
+        </TransformGroup>
+        <TransformGroup name="levelAreas" nodeId="42">
+          <TransformGroup name="levelAreaStart" translation="2.161 0 1.68" nodeId="43"/>
+          <TransformGroup name="levelAreaWidth" translation="-2.161 0 1.68" nodeId="44"/>
+          <TransformGroup name="levelAreaHeight" translation="2.161 0 -1.68" nodeId="45"/>
         </TransformGroup>
       </TransformGroup>
   </Scene>

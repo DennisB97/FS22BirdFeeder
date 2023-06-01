@@ -11,19 +11,25 @@
     <description>
         <en><![CDATA[Decorational bird feeder with feeding functionality and birds.
 Full multiplayer support.
-Requires FS22_FlyPathfinding mod.
-Feeder can be found in the Animals/Others construction tab.
+Requires FS22_FlyPathfinding mod for bird support and pathfinding.
+Feeder can be bought and placed from the Animals/Others construction tab.
 Bird seed can bought from the Pallets menu.
     ]]></en>
         <de><![CDATA[Dekoratives Vogelhäuschen mit Fütterungsfunktion und Vögeln.
 Volle Multiplayer-Unterstützung.
-Erfordert den FS22_FlyPathfinding-Mod.
-Den Futterspender finden Sie auf der Registerkarte „Tiere/Andere Konstruktion“.
+Erfordert den FS22_FlyPathfinding-Mod für Vogelunterstützung und Wegfindung.
+Der Futterspender kann auf der Registerkarte „Tiere/Andere Konstruktion“ gekauft und platziert werden.
 Vogelfutter kann im Palettenmenü gekauft werden.
     ]]></de>
+       <fr><![CDATA[Mangeoire à oiseaux décorative avec fonction d'alimentation et oiseaux.
+Prise en charge multijoueur complète.
+Nécessite le mod FS22_FlyPathfinding pour la prise en charge des oiseaux et la recherche de chemin.
+La mangeoire peut être achetée et placée dans l'onglet Animaux/Autres constructions.
+Les graines pour oiseaux peuvent être achetées dans le menu de la palette.
+       ]]></fr>
     </description>
 
-    <iconFilename>images/icon_birdFeeder.dds</iconFilename>
+    <iconFilename>icon_birdFeeder.dds</iconFilename>
     <multiplayer supported="true"/>
     <l10n filenamePrefix="translations/l10n"/>
 
@@ -37,7 +43,7 @@ Vogelfutter kann im Palettenmenü gekauft werden.
     </storeItems>
 
     <brands>
-        <brand title="Animal Experience" image="images/AnimalExperience.dds" name="AnimalExperience"/>
+        <brand title="Animal Experience" image="images/brand_AnimalExperience.dds" name="AnimalExperience"/>
     </brands>
 
     <extraSourceFiles>
