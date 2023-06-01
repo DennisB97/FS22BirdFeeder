@@ -16,7 +16,7 @@ end
 function CustomVehicleInfo.initSpecialization()
     local schema = Vehicle.xmlSchema
     schema:setXMLSpecializationType("CustomVehicleInfo")
-    schema:register(XMLValueType.STRING,"vehicle.customVehicleInfo#uiInfoToRemove", "Selected information to remove, Mass etc. &#160 inserted into spaces within words")
+    schema:register(XMLValueType.STRING,"vehicle.customVehicleInfo#uiLinesToRemove", "Selected information to remove from the index, Mass etc on index usually 2.")
     schema:register(XMLValueType.STRING,"vehicle.customVehicleInfo#uiInfoTitle", "Title for the info UI")
 end
 
@@ -44,25 +44,22 @@ function CustomVehicleInfo:showModifiedInfo(superFunc,box)
         box.title = spec.infoTitle
     end
 
-    --If removeInfo string is not nil, then proceed to separate words within the string and replace any special case spaces
+
+    --If removeInfo string is not nil, then proceed to separate indices within the string and replace any special case spaces
     if spec.removeInfo ~= nil then
-        for i, value in pairs(CustomVehicleInfo.prepareTableFromString(spec.removeInfo)) do
-             for k, v in pairs(box.activeLines) do
-                if v.key == value then
-                table.remove(box.activeLines,k)
-                break
-                end
-             end
+        local indices = CustomVehicleInfo.prepareTableFromString(spec.removeInfo)
+        for i = #indices, 1 , -1 do
+            table.remove(box.activeLines,indices[i])
         end
     end
 
  end
 
----Called to modify given string into word table
---@return a table value containing all words that should be removed from UI info box.
+---Called to modify given string into index table
+--@return a table value containing all indices that should be removed from UI info box.
 function CustomVehicleInfo.prepareTableFromString(inString)
 
-    local wordTable = {}
+    local indiceTable = {}
     local currentWord = ""
     for i = 1, #inString do
         local char = inString:sub(i,i)
@@ -72,15 +69,26 @@ function CustomVehicleInfo.prepareTableFromString(inString)
         end
 
         if char == " " and currentWord ~= "" or currentWord ~= "" and string.len(inString) == i then
-            --Before inserting try remove all special case spaces within the string to a normal space
-            currentWord = string.gsub(currentWord,"&#160"," ")
-            table.insert(wordTable,currentWord)
+            local newIndex = tonumber(currentWord)
+            local bAdded = false
+            for i,value in ipairs(indiceTable) do
+                if value > newIndex then
+                    table.insert(indiceTable,i,newIndex)
+                    bAdded = true
+                    break
+                end
+            end
+
+            if not bAdded then
+                table.insert(indiceTable,newIndex)
+            end
+
             currentWord = ""
         end
 
     end
 
-    return wordTable
+    return indiceTable
 end
 
 ---On load create the spec path, and check xml for values
@@ -90,7 +98,7 @@ function CustomVehicleInfo:onLoad(savegame)
     local spec = self.spec_customVehicleInfo
     local xmlFile = self.xmlFile
     spec.infoTitle = xmlFile:getValue("vehicle.customVehicleInfo#uiInfoTitle")
-    spec.removeInfo = xmlFile:getValue("vehicle.customVehicleInfo#uiInfoToRemove")
+    spec.removeInfo = xmlFile:getValue("vehicle.customVehicleInfo#uiLinesToRemove")
 
 end
 

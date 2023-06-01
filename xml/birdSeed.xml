@@ -47,7 +47,7 @@
         </fillUnitConfigurations>
     </fillUnit>
 
-    <customVehicleInfo uiInfoToRemove="Mass" uiInfoTitle="$l10n_fillType_birdSeed"/>
+    <customVehicleInfo uiLinesToRemove="2" uiInfoTitle="$l10n_fillType_birdSeed"/>
 
     <customDischarge customDirectionY="1" bUseCustomDirection="true" />
 

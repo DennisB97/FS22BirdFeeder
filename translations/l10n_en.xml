@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
      <texts>
+		<text name="birdFeeder" text="Bird Feeder"/>
 		<text name="fillType_birdSeed" text="Bird Seed"/>
 		<text name="fillType_birdSeed2" text="Bird Seed 2Kg"/>
 		<text name="birdFeeder_noAccess" text="Birds will not arrive to your bird feeder, please move it to a more open area"/>

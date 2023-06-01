@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <placeable type="placeableFeeder" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../shared/xml/schema/placeable.xsd">
     <storeData>
-        <name>Bird Feeder</name>
+        <name>$l10n_birdFeeder</name>
         <functions>
             <function>$l10n_function_birdFeeder</function>
         </functions>

@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
     <texts>
+        <text name="birdFeeder" text="Vogelfütterer"/>
 		<text name="fillType_birdSeed" text="Vogelfutter" />
 		<text name="fillType_birdSeed2" text="Vogelfutter 2Kg" />
         <text name="birdFeeder_noAccess" text="Vögel kommen nicht an Ihrem Vogelhäuschen an, bitte stellen Sie es in einen offeneren Bereich"/>
