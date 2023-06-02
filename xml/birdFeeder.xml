@@ -6,8 +6,8 @@
             <function>$l10n_function_birdFeeder</function>
         </functions>
         <image>images/store_birdFeeder.dds</image>
-        <price>500</price>
-        <dailyUpkeep>1</dailyUpkeep>
+        <price>300</price>
+        <dailyUpkeep>0</dailyUpkeep>
         <lifetime>1000</lifetime>
         <rotation>0</rotation>
         <brand>AnimalExperience</brand>
