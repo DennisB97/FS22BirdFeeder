@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
      <texts>
-		<text name="birdFeeder" text="Mangeoire Oiseaux"/>
+		<text name="birdFeeder" text="Mangeoire oiseaux"/>
 		<text name="fillType_birdSeed" text="Graines pour oiseaux"/>
 		<text name="fillType_birdSeed2" text="Graines pour oiseaux 2Kg"/>
 		<text name="birdFeeder_noAccess" text="Les oiseaux n'arriveront pas à votre mangeoire à oiseaux, veuillez la déplacer vers une zone plus ouverte"/>
@@ -10,5 +10,8 @@
         <text name="function_birdFeeder" text="Distributeur de semences, n'oubliez pas d'acheter des graines pour oiseaux et de les apporter à la mangeoire, et regardez les oiseaux venir manger." />
         <text name="typeDesc_birdSeed" text="Nourriture pour oiseaux, ajoutez cette nourriture dans la mangeoire à oiseaux achetée dans les placables." />
         <text name="unit_gramShort" text="g" />
+        <text name="input_FLYPATHFINDING_DBG_PREVIOUS" text="Débogage précédent" />
+        <text name="input_FLYPATHFINDING_DBG_NEXT" text="Déboguer ensuite" />
+        <text name="input_FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES" text="basculer nœuds fermés" />
 	</texts>
 </l10n>

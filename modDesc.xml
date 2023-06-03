@@ -6,36 +6,67 @@
     <title>
         <en>Bird Feeder</en>
         <de>Vogelfütterer</de>
+        <fr>Mangeoire Oiseaux</fr>
     </title>
 
     <description>
         <en><![CDATA[Decorational bird feeder with feeding functionality and birds.
-Full multiplayer support.
-Requires FS22_FlyPathfinding mod for bird support and pathfinding.
-Feeder can be bought and placed from the Animals/Others construction tab.
-Bird seed can bought from the Pallets menu.
-    ]]></en>
+
+- Bird feeder:
+  Purchase price: 300 €
+  Maintenance: 0 €
+  Can be found in the game under (Bird feeder): Construction / Animals / Others
+
+- Bird seed:
+  Purchase price: 20 €
+  Can be found in the game under (Bird seed 2Kg): Other / Pallets
+
+- Other info
+  Multiplayer support
+  Languages: English, Deutsch, Français
+  Features flying birds which will come and eat from feeder few hours after having added seeds to feeder
+  Do note that creation of the navigation grid for birds will take few minutes at start of loading into save game, if not on dedicated server
+  config/config.xml has tweakable settings regarding creation of the navigation grid, if performance is slow]]></en>
         <de><![CDATA[Dekoratives Vogelhäuschen mit Fütterungsfunktion und Vögeln.
-Volle Multiplayer-Unterstützung.
-Erfordert den FS22_FlyPathfinding-Mod für Vogelunterstützung und Wegfindung.
-Der Futterspender kann auf der „Tiere/Sonstiges“ gekauft und platziert werden.
-Vogelfutter kann im Palettenmenü gekauft werden.
-    ]]></de>
+
+- Vogelfütterer:
+  Kaufpreise: 300 €
+  Unterhalt: 0 €
+  Zu finden im Spiel unter (Vogelfütterer): Bauen / Tiere / Sonstiges
+
+- Vogelfutter:
+  Kaufpreise: 20 €
+  Zu finden im Spiel unter (Vogelfutter 2Kg): Sonstiges / Paletten
+
+- Andere Information:
+  Sprachen: Deutsch, English, Français
+  Multiplayer-Unterstützung
+  Mit fliegenden Vögeln, wird ein paar Stunden später kommen und vom Futterhäuschen fressen
+  Beachten Sie, dass die Erstellung des Navigationsrasters für Vögel zu Beginn des Ladens in das gespeicherte Spiel einige Minuten dauern wird, wenn es sich nicht auf einem dedizierten Server befindet
+  config/config.xml verfügt über anpassbare Einstellungen zur Erstellung des Navigationsrasters, falls die Leistung langsam ist]]></de>
        <fr><![CDATA[Mangeoire à oiseaux décorative avec fonction d'alimentation et oiseaux.
-Prise en charge multijoueur complète.
-Nécessite le mod FS22_FlyPathfinding pour la prise en charge des oiseaux et la recherche de chemin.
-La mangeoire peut être achetée et placée dans l'onglet Animaux/Autres constructions.
-Les graines pour oiseaux peuvent être achetées dans le menu de la palette.
-       ]]></fr>
+
+- Mangeoire oiseaux:
+  Prix d'achat: 300 €
+  Entretien: 0 €
+  Se trouve dans le jeu sous (Mangeoire oiseaux) : Construction / Animaux / Autres
+
+
+- Graines pour oiseaux:
+  Prix d'achat: 20 €
+  Se trouve dans le jeu sous (Graines pour oiseaux 2Kg) : Objets / Palettes
+
+- Autre info:
+  Langues: Français, Deutsch, English
+  Multijoueur
+  Dispose d'oiseaux volants qui viendront manger de la mangeoire quelques heures après avoir ajouté des graines à la mangeoire
+  Notez que la création de la grille de navigation pour les oiseaux prendra quelques minutes au début du chargement dans le jeu, sur serveur dédié c'est plus rapide
+  config/config.xml a des paramètres modifiables concernant la création de la grille de navigation, si les performances sont lentes]]></fr>
     </description>
 
     <iconFilename>icon_birdFeeder.dds</iconFilename>
     <multiplayer supported="true"/>
     <l10n filenamePrefix="translations/l10n"/>
-
-	<dependencies>
-		<dependency>FS22_FlyPathfinding</dependency>
-	</dependencies>
 
     <storeItems>
         <storeItem xmlFilename="xml/birdFeeder.xml"/>
@@ -52,6 +83,13 @@ Les graines pour oiseaux peuvent être achetées dans le menu de la palette.
         <sourceFile filename="scripts/states/birdStates.lua" />
         <sourceFile filename="scripts/feederBird.lua" />
         <sourceFile filename="scripts/events/feederInvalidPlacementEvent.lua" />
+        <sourceFile filename="scripts/flyPathfinding/flyPathfinding.lua" />
+        <sourceFile filename="scripts/flyPathfinding/gridMap3D.lua" />
+        <sourceFile filename="scripts/flyPathfinding/states/gridMap3DStates.lua" />
+        <sourceFile filename="scripts/flyPathfinding/aStar.lua" />
+        <sourceFile filename="scripts/flyPathfinding/debug/aStarDebug.lua" />
+        <sourceFile filename="scripts/flyPathfinding/catmullRomSpline.lua" />
+        <sourceFile filename="scripts/flyPathfinding/debug/catmullRomSplineDebug.lua" />
     </extraSourceFiles>
 
     <specializations>
@@ -74,5 +112,23 @@ Les graines pour oiseaux peuvent être achetées dans le menu de la palette.
     </vehicleTypes>
 
     <fillTypes filename="xml/newfilltypes.xml" />
+
+    <inputBinding>
+        <actionBinding action="FLYPATHFINDING_DBG_PREVIOUS">
+			<binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lshift KEY_lalt KEY_KP_minus" />
+		</actionBinding>
+		<actionBinding action="FLYPATHFINDING_DBG_NEXT">
+			<binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lshift KEY_lalt KEY_KP_plus" />
+		</actionBinding>
+        <actionBinding action="FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES">
+			<binding device="KB_MOUSE_DEFAULT" input="KEY_lctrl KEY_lshift KEY_lalt KEY_c" />
+		</actionBinding>
+    </inputBinding>
+
+    <actions>
+		<action name="FLYPATHFINDING_DBG_PREVIOUS" />
+		<action name="FLYPATHFINDING_DBG_NEXT" />
+		<action name="FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES" />
+	</actions>
 
 </modDesc>

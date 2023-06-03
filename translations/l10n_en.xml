@@ -1,14 +1,17 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
      <texts>
-		<text name="birdFeeder" text="Bird Feeder"/>
-		<text name="fillType_birdSeed" text="Bird Seed"/>
-		<text name="fillType_birdSeed2" text="Bird Seed 2Kg"/>
+		<text name="birdFeeder" text="Bird feeder"/>
+		<text name="fillType_birdSeed" text="Bird seed"/>
+		<text name="fillType_birdSeed2" text="Bird seed 2Kg"/>
 		<text name="birdFeeder_noAccess" text="Birds will not arrive to your bird feeder, please move it to a more open area"/>
         <text name="birdFeeder_infoNoAccess" text="MOVE FEEDER"/>
         <text name="birdFeeder_infoNoAccessTitle" text="INVALID PLACEMENT"/>
         <text name="function_birdFeeder" text="Placeable bird feeder, remember to buy bird seed and carry it to the feeder, and watch birds come and eat." />
         <text name="typeDesc_birdSeed" text="Food for birds, add this food into the bird feeder bought from the placeables." />
         <text name="unit_gramShort" text="g" />
+        <text name="input_FLYPATHFINDING_DBG_PREVIOUS" text="Debug previous" />
+        <text name="input_FLYPATHFINDING_DBG_NEXT" text="Debug next" />
+        <text name="input_FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES" text="Toggle closed nodes" />
 	</texts>
 </l10n>

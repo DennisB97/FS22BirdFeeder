@@ -1,14 +1,10 @@
 --[[
 This file is part of Bird feeder mod (https://github.com/DennisB97/FS22BirdFeeder)
-MIT License
+
 Copyright (c) 2023 Dennis B
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this mod and associated files, to copy, modify ,subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -21,8 +17,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This mod is for personal use only and is not affiliated with GIANTS Software or endorsed by the game developer.
-Selling or distributing this mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies.
+This mod is for personal use only and is not affiliated with GIANTS Software.
+Sharing or distributing FS22_BirdFeeder mod in any form is prohibited except for the official ModHub (https://www.farming-simulator.com/mods).
+Selling or distributing FS22_BirdFeeder mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies,
 Please refer to the game developer's website for more information.
 ]]
 
@@ -188,11 +185,11 @@ function FeederBird:load(xmlFilename,i3dFilename)
     self.singNightLimitStart = Utils.getNoNil(self.xmlFile:getValue("bird.general#singNightLimitStart"),20)
     self.singNightLimitEnd = Utils.getNoNil(self.xmlFile:getValue("bird.general#singNightLimitEnd"),7)
 
-    if self.isServer and FS22_FlyPathfinding ~= nil then
-        self.pathfinder = FS22_FlyPathfinding.AStar.new(self.isServer,self.isClient)
+    if self.isServer and FlyPathfinding.bPathfindingEnabled then
+        self.pathfinder = AStar.new(self.isServer,self.isClient)
         self.pathfinder:register(true)
 
-        self.splineCreator = FS22_FlyPathfinding.CatmullRomSplineCreator.new(self.isServer,self.isClient)
+        self.splineCreator = CatmullRomSplineCreator.new(self.isServer,self.isClient)
         self.splineCreator:register(true)
 
         -- later set the AABB area birds can fly in as {minX,minY,minZ,maxX,maxY,maxZ}
@@ -641,7 +638,7 @@ function FeederBird:getRandomFlyAreaPoint()
         -- clamp y so that it is 2m from ground that it can fly to at minimum, grid path might get lower though.
         flyPoint.y = MathUtil.clamp(flyPoint.y,terrainHeight + 2,self.flyAreaAABB[5])
 
-        foundNode = FS22_FlyPathfinding.g_GridMap3D:getGridNode(flyPoint,false,self.octreeNode[1])
+        foundNode = g_currentMission.gridMap3D:getGridNode(flyPoint,false,self.octreeNode[1])
 
         -- Check that the found fly point is not too close to previous node
         if foundNode[1] ~= nil and self.previousFlyPoint ~= nil then

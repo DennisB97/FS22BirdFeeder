@@ -34,4 +34,3 @@ function BirdFeederMod.register(typeManager)
 end
 
 TypeManager.finalizeTypes = Utils.prependedFunction(TypeManager.finalizeTypes, BirdFeederMod.register)
-

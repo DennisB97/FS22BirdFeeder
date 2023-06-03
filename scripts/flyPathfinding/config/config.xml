@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<!--
+	Some general settings for the octree and A* search and catmullrom, these mainly affects the performance of the game.
+    version is the version of this fly pathfinding system.
+-->
+<Config version="1.0.0">
+    <!-- maxVoxelResolution highest resolution leaf voxels in the octree, given in meters. -->
+    <!-- maxOctreePreLoops how many loops to do initially when loading into the game
+        helps to avoid creating the octree very long while the game is running. Dedicated server ignores. (Bigger the number the more seconds before the game world becomes available after pressing enter on loading screen done)
+    -->
+    <!-- maxOctreeGenerationLoopsPerUpdate how many loops per update to generate the octree, HEAVILY affects performance until the octree is done. But the smaller the value the longer it takes to generate the octree navigation grid. Dedicated server ignores. -->
+    <!-- ignoreTrees if the grid should not include trees as solid -->
+    <!-- ignoreWater if the grid should not include water as solid -->
+    <octreeConfig maxVoxelResolution="1" maxOctreePreLoops="125000" maxOctreeGenerationLoopsPerUpdate="20" ignoreTrees="true" ignoreWater="true" />
+
+    <!-- maxSearchedNodes limits the amount of nodes can be searched until giving up looking for path, too low value could cause problems in cases such as very long tunnels etc. -->
+    <!-- maxPathfindLoops how many loops per update to do the A* pathfinding algorithm, HEAVILY affects performance as long as there is an object that is pathfinding. -->
+    <!-- heuristicScalingMaxSize this is used to change up to how big in meters grid nodes should still prefer to have heuristic estimate range to be closer than smaller nodes. The bigger the value the larger nodes pathfinding will take when traversing very long distances. -->
+    <!-- dedicatedScalingFactor Multiplies the maxPathfindLoops if on dedicated server by this value. -->
+    <aStarConfig maxSearchedNodes="100000" maxPathfindLoops="20" heuristicScalingMaxSize="30" dedicatedScalingFactor="2" />
+
+    <!-- alpha decides how the catmull-rom behaves, default 0.5 as centripetal. -->
+    <!-- tension decides how the catmull-rom sharply sticks to the line between points. -->
+    <!-- roundSharpAngles decides if between segments should be checked for too sharp angles and curve it out. But can also be adjusted per catmullrom object in .new params. -->
+    <!-- roundSharpAngleLimit sets the limit before an additional segment is needed between two sharp segments, given in degrees. But can also be adjusted per catmullrom object in .new params. -->
+    <!-- segmentLengthEstimationPoints how many points within the curved segment to measure, for estimating the spline length, the more the accurate but heavier to run. -->
+    <!-- roundConnectionRadius if roundSharpAngles true and limit reached then this radius adjusts the new segment size between the segments. Given in m. But can also be adjusted per catmullrom object in .new params. -->
+    <!-- tSamplesPerMeter Amount of samples to use per 1m for sampling t values between segment. The higher value the more accurate constant speed along spline. -->
+    <!-- tTotalSamplesLimit Max amount of samples to use per segment for sampling t values. -->
+    <!-- newtonsTEpsilon The epsilon value used for netwon's method looking for more accurate t value on segment, the lower value the higher accuracy. -->
+    <!-- newtonsTLoopLimit The loop limit for netwon's method when looking for more accurate t value on segment, the higher value the higher risk of not finding accurate t. -->
+    <!-- ghostPointScalingLength scaling value for the ghost P0 and P3 points how far from the P1 and P2 they should be compared to whole segment straight distance. -->
+    <!-- maxSampleLoops How many loops per update to sample points on a segment, to note that one segment could have around tSamplesPerMeter * tTotalSamplesLimit * newtonsTLoopLimit * segmentLengthEstimationPoints amount of loops in one frame. -->
+    <!-- dedicatedScalingFactor Multiplies the maxPathfindLoops if on dedicated server by this value. -->
+    <catmullRomConfig alpha="0.5" tension="0.0" roundSharpAngles="true" roundSharpAngleLimit="20" roundConnectionRadius="0.4" segmentLengthEstimationPoints="10" tSamplesPerMeter="1"
+        tTotalSamplesLimit="200" newtonsTEpsilon="0.1" newtonsTLoopLimit="10" ghostPointScalingLength="0.1" maxSampleLoops="1" dedicatedScalingFactor="2" />
+
+</Config>
+
+

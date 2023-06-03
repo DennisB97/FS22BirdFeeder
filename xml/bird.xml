@@ -4,7 +4,7 @@
     <animations flyAnimation="fly" eatAnimation="eat" idleAnimation="idle" />
     <sounds>
         <sing file="sounds/birdSing.ogg" linkNode="birdAudioNode" outerRadius="60" innerRadius="2" loops="1" supportsReverb="true" isLocalSound="false" debug="false">
-            <randomization minVolume="0.5" maxVolume="0.8" minPitch="-0.01" maxPitch="0.01" />
+            <randomization minVolume="0.5" maxVolume="1.0" minPitch="-0.01" maxPitch="0.01" />
         </sing>
     </sounds>
 

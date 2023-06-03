@@ -1,14 +1,10 @@
 --[[
 This file is part of Bird feeder mod (https://github.com/DennisB97/FS22BirdFeeder)
-MIT License
+
 Copyright (c) 2023 Dennis B
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this mod and associated files, to copy, modify ,subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -21,8 +17,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This mod is for personal use only and is not affiliated with GIANTS Software or endorsed by the game developer.
-Selling or distributing this mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies.
+This mod is for personal use only and is not affiliated with GIANTS Software.
+Sharing or distributing FS22_BirdFeeder mod in any form is prohibited except for the official ModHub (https://www.farming-simulator.com/mods).
+Selling or distributing FS22_BirdFeeder mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies,
 Please refer to the game developer's website for more information.
 ]]
 
@@ -156,9 +153,9 @@ function PlaceableFeeder:onDelete()
         local farmId = self:getOwnerFarmId()
         PlaceableFeeder.owners[farmId] = nil
 
-        if self.isServer and FS22_FlyPathfinding ~= nil and FS22_FlyPathfinding.g_GridMap3D ~= nil then
+        if self.isServer and FlyPathfinding.bPathfindingEnabled and g_currentMission.gridMap3D ~= nil then
             for _,pickObject in pairs(spec.pickObjects) do
-                FS22_FlyPathfinding.g_GridMap3D:removeObjectIgnoreID(pickObject)
+                g_currentMission.gridMap3D:removeObjectIgnoreID(pickObject)
             end
 
             if spec.accessTester ~= nil then
@@ -377,20 +374,20 @@ function PlaceableFeeder:onFinalizePlacement()
         spec.birdFeederStates[spec.EBirdSystemStates.PREPARELEAVE]:init(self,self.isServer,self.isClient)
         spec.currentState = spec.EBirdSystemStates.UNINTIALIZED
 
-        if FS22_FlyPathfinding ~= nil and FS22_FlyPathfinding.g_GridMap3D ~= nil then
+        if FlyPathfinding.bPathfindingEnabled and g_currentMission.gridMap3D ~= nil then
             -- Need to create birds for the feeder
             self:createBirds()
 
             -- create pathfinding class that will be used to check if the location of this feeder is good after gridmap becomes available
-            spec.accessTester = FS22_FlyPathfinding.AStar.new(self.isServer,self.isClient)
+            spec.accessTester = AStar.new(self.isServer,self.isClient)
             spec.accessTester:register(true)
 
              -- add this bird feeder to be ignored by the navigation grid as non solid.
             for _,pickObject in pairs(spec.pickObjects) do
-                FS22_FlyPathfinding.g_GridMap3D:addObjectIgnoreID(pickObject)
+                g_currentMission.gridMap3D:addObjectIgnoreID(pickObject)
             end
 
-            if next(spec.birds) ~= nil and FS22_FlyPathfinding.g_GridMap3D:isAvailable() then
+            if next(spec.birds) ~= nil and g_currentMission.gridMap3D:isAvailable() then
                 self:initializeFeeder()
             end
         else
@@ -707,7 +704,7 @@ function PlaceableFeeder:onPlaceableFeederFillLevelChanged(fillType,delta)
     local spec = self.spec_placeableFeeder
 
     -- check to make sure in a correct state and grid is ready.
-    if spec.currentState == spec.EBirdSystemStates.UNINITIALIZED or next(spec.birds) == nil or FS22_FlyPathfinding == nil or FS22_FlyPathfinding.g_GridMap3D == nil or FS22_FlyPathfinding.g_GridMap3D:isAvailable() == false or spec.bInvalidPlaced then
+    if spec.currentState == spec.EBirdSystemStates.UNINITIALIZED or next(spec.birds) == nil or FlyPathfinding.bPathfindingEnabled == false or g_currentMission.gridMap3D == nil or g_currentMission.gridMap3D:isAvailable() == false or spec.bInvalidPlaced then
         return
     end
 
@@ -901,7 +898,7 @@ function PlaceableFeeder:checkFeederAccess(callback)
 
     local spec = self.spec_placeableFeeder
 
-    if FS22_FlyPathfinding ~= nil and spec.accessTester ~= nil and spec.accessTester:isPathfinding() == false then
+    if FlyPathfinding.bPathfindingEnabled and spec.accessTester ~= nil and spec.accessTester:isPathfinding() == false then
         -- pathfind down from the sky to the feeder.
         if spec.accessTester:find({x=0,y=2000,z=0},spec.eatArea.corner1,false,true,false,callback,nil,spec.accessSearchLoops,spec.maxAccessClosedNodes) == false then
             callback({nil,false})
@@ -953,7 +950,7 @@ end
 -- server only.
 --@return flyAreaAABB, octreeNode the fly area aabb and octree node containing the aabb at least.
 function PlaceableFeeder:prepareFlyArea()
-    if FS22_FlyPathfinding == nil or FS22_FlyPathfinding.g_GridMap3D == nil then
+    if FlyPathfinding.bPathfindingEnabled == false or g_currentMission.gridMap3D == nil then
         return
     end
 
@@ -967,18 +964,18 @@ function PlaceableFeeder:prepareFlyArea()
     minExtents.y = feederPosition.y
     minExtents.z = feederPosition.z - spec.birdFlyRadius
 
-    minExtents = FS22_FlyPathfinding.g_GridMap3D:clampToGrid(minExtents)
+    minExtents = g_currentMission.gridMap3D:clampToGrid(minExtents)
 
     local maxExtents = {}
     maxExtents.x = feederPosition.x + spec.birdFlyRadius
     maxExtents.y = feederPosition.y + spec.birdFlyRadius
     maxExtents.z = feederPosition.z + spec.birdFlyRadius
 
-    maxExtents = FS22_FlyPathfinding.g_GridMap3D:clampToGrid(maxExtents)
+    maxExtents = g_currentMission.gridMap3D:clampToGrid(maxExtents)
 
     local flyAreaAABB = {minExtents.x,minExtents.y,minExtents.z,maxExtents.x,maxExtents.y,maxExtents.z}
 
-    local octreeNode = FS22_FlyPathfinding.g_GridMap3D:getGridNodeEncomppasingPositions({minExtents,maxExtents})
+    local octreeNode = g_currentMission.gridMap3D:getGridNodeEncomppasingPositions({minExtents,maxExtents})
     spec.flyAreaAABB = flyAreaAABB
 
     return flyAreaAABB, octreeNode
@@ -1036,7 +1033,7 @@ end
 -- server only.
 --@return a position as {x=,y=,z=} in the sky, nil if no position was able to be made.
 function PlaceableFeeder:getRandomBirdSpawn()
-    if FS22_FlyPathfinding == nil or FS22_FlyPathfinding.g_GridMap3D == nil then
+    if FlyPathfinding.bPathfindingEnabled == false or g_currentMission.gridMap3D == nil then
         return nil
     end
 
@@ -1070,9 +1067,9 @@ function PlaceableFeeder:getRandomBirdSpawn()
             return nil
         end
 
-        possiblePosition = FS22_FlyPathfinding.g_GridMap3D:clampToGrid(possiblePosition)
+        possiblePosition = g_currentMission.gridMap3D:clampToGrid(possiblePosition)
 
-        foundNode = FS22_FlyPathfinding.g_GridMap3D:getGridNode(possiblePosition,false)
+        foundNode = g_currentMission.gridMap3D:getGridNode(possiblePosition,false)
 
         currentTries = currentTries + 1
 

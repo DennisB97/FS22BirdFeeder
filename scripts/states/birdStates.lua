@@ -1,14 +1,10 @@
 --[[
 This file is part of Bird feeder mod (https://github.com/DennisB97/FS22BirdFeeder)
-MIT License
+
 Copyright (c) 2023 Dennis B
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+of this mod and associated files, to copy, modify ,subject to the following conditions:
 
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
@@ -21,8 +17,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-This mod is for personal use only and is not affiliated with GIANTS Software or endorsed by the game developer.
-Selling or distributing this mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies.
+This mod is for personal use only and is not affiliated with GIANTS Software.
+Sharing or distributing FS22_BirdFeeder mod in any form is prohibited except for the official ModHub (https://www.farming-simulator.com/mods).
+Selling or distributing FS22_BirdFeeder mod for a fee or any other form of consideration is prohibited by the game developer's terms of use and policies,
 Please refer to the game developer's website for more information.
 ]]
 
@@ -315,7 +312,7 @@ function BirdStateLeaveFly:enter()
         self.owner:setAnimation(self.owner.EBirdAnimations.FLY)
     end
 
-    if self.owner ~= nil and self.feeder ~= nil and self.isServer and FS22_FlyPathfinding ~= nil then
+    if self.owner ~= nil and self.feeder ~= nil and self.isServer and FlyPathfinding.bPathfindingEnabled then
         local goalPosition = self.owner.spawnPosition
         local startPosition = self.owner:getBirdNextStartPosition()
         local callback = function(spline) self:splineDoneCallback(spline) end
@@ -508,7 +505,7 @@ end
 function BirdStateFeederLand:enter()
     BirdStateFeederLand:superClass().enter(self)
 
-    if self.owner ~= nil and self.feeder ~= nil and self.isServer and FS22_FlyPathfinding ~= nil then
+    if self.owner ~= nil and self.feeder ~= nil and self.isServer and FlyPathfinding.bPathfindingEnabled then
         local goalPosition = self.feeder:getRandomLandPosition()
         local startPosition = self.owner:getBirdNextStartPosition()
         local callback = function(spline) self:splineDoneCallback(spline) end
