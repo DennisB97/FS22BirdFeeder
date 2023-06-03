@@ -133,7 +133,13 @@ function FlyPathfinding.compareVersions(v1, v2)
     major1, minor1, patch1 = tonumber(major1),tonumber(minor1),tonumber(patch1)
     major2, minor2, patch2 = tonumber(major2),tonumber(minor2),tonumber(patch1)
 
-    if major1 ~= major2 or minor1 > minor2 or patch1 > patch2 then
+    if major1 ~= major2 then
+        return false
+    end
+
+    if minor1 > minor2 then
+        return false
+    elseif minor1 == minor2 and patch1 > patch2 then
         return false
     end
 
