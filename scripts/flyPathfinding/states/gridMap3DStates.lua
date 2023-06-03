@@ -897,7 +897,7 @@ function GridMap3DStateDebug:enter()
     end
 
     self.maxDebugLayer = self.owner:getNodeTreeLayer(self.owner.leafNodeResolution)
-    if g_inputBinding ~= nil then
+    if g_inputBinding ~= nil and InputAction.FLYPATHFINDING_DBG_PREVIOUS ~= nil then
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_PREVIOUS, self, self.decreaseDebugLayer, true, false, false, true, true, true)
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_NEXT, self, self.increaseDebugLayer, true, false, false, true, true, true)
     end

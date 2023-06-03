@@ -13,7 +13,7 @@ function AStarDebug.new()
     self.maxSavedDebugPaths = 10000
     self.bShowClosedNodes = false
 
-    if g_inputBinding ~= nil then
+    if g_inputBinding ~= nil and InputAction.FLYPATHFINDING_DBG_PREVIOUS ~= nil then
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_PREVIOUS, self, self.debugPreviousPath, true, false, false, true, true, true)
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_NEXT, self, self.debugNextPath, true, false, false, true, true, true)
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES, self, self.toggleClosedNodes, true, false, false, true, true, true)

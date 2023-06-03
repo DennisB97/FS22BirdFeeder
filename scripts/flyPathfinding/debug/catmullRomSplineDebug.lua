@@ -19,7 +19,7 @@ function CatmullRomDebug.new()
     self.debugFollowDistance3 = 2
     self.traceSpeed = 8
 
-    if g_inputBinding ~= nil then
+    if g_inputBinding ~= nil and InputAction.FLYPATHFINDING_DBG_PREVIOUS ~= nil then
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_PREVIOUS, self, self.debugPreviousSpline, true, false, false, true, true, true)
         local _, _eventId = g_inputBinding:registerActionEvent(InputAction.FLYPATHFINDING_DBG_NEXT, self, self.debugNextSpline, true, false, false, true, true, true)
     end
