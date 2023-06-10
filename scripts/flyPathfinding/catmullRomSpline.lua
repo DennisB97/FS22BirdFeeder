@@ -490,11 +490,11 @@ end
 
 --- loadConfig called to load some default values for the pathfinding algorithm from xml file.
 function CatmullRomSplineCreator:loadConfig()
-    local filePath = Utils.getFilename("config/config.xml", FlyPathfinding.modDir)
-    local xmlFile = loadXMLFile("TempXML", filePath)
 
     local dedicatedScalingFactor = nil
-    if xmlFile ~= nil then
+    if fileExists(FlyPathfinding.modDir .. "config/config.xml") then
+        local filePath = Utils.getFilename("config/config.xml", FlyPathfinding.modDir)
+        local xmlFile = loadXMLFile("TempXML", filePath)
         if getXMLString(xmlFile, "Config.catmullRomConfig#roundSharpAngles") ~= nil then
             self.bRoundSharpAnglesDefault = getXMLBool(xmlFile,"Config.catmullRomConfig#roundSharpAngles")
         end

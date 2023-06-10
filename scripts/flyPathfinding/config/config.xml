@@ -3,9 +3,8 @@
 
 <!--
 	Some general settings for the octree and A* search and catmullrom, these mainly affects the performance of the game.
-    version is the version of this fly pathfinding system.
 -->
-<Config version="1.0.0">
+<Config>
     <!-- maxVoxelResolution highest resolution leaf voxels in the octree, given in meters. -->
     <!-- maxOctreePreLoops how many loops to do initially when loading into the game
         helps to avoid creating the octree very long while the game is running. Dedicated server ignores. (Bigger the number the more seconds before the game world becomes available after pressing enter on loading screen done)

@@ -68,9 +68,8 @@ FlyPathfinding.modName = g_currentModName;
 FlyPathfinding.modDir = g_currentModDirectory .. "scripts/flyPathfinding/"
 -- the g_currentMission.gridMap3D might ne valid if some other mod had it too, but if the required version was lower then the following bool is false to indicate can't use pathfinding until upgraded.
 FlyPathfinding.bPathfindingEnabled = false
--- changed per basis of in included mod.
-FlyPathfinding.requiredPathfindingVersion = "1.0.0"
-
+-- grid version, to know if there has been any changes to the Grid system when multiple mods use this pathfinding system as the grid is shared between mods.
+FlyPathfinding.requiredGridVersion = "1.0.0"
 
 --- deleteMap is FS22 function called after exiting played save.
 function FlyPathfinding:deleteMap(savegame)
@@ -89,7 +88,7 @@ function FlyPathfinding:loadMapData(xmlFile)
 
     if g_currentMission ~= nil and g_server ~= nil then
         if g_currentMission.gridMap3D == nil then
-            g_currentMission.gridMap3D = GridMap3D.new()
+            g_currentMission.gridMap3D = GridMap3D.new(FlyPathfinding.requiredGridVersion)
             g_currentMission.gridMap3D:register(true)
             if g_currentMission.gridMap3D:init() == false then
                 g_currentMission.gridMap3D:delete()
@@ -106,10 +105,10 @@ function FlyPathfinding:loadMapData(xmlFile)
         else
             Logging.info("Some other mod has created the pathfinding grid before this mod at: " .. FlyPathfinding.modDir)
             local usedVersion = g_currentMission.gridMap3D:getVersion()
-            local valid = FlyPathfinding.compareVersions(FlyPathfinding.requiredPathfindingVersion,usedVersion)
+            local valid = FlyPathfinding.compareVersions(FlyPathfinding.requiredGridVersion,usedVersion)
             if not valid then
                 Logging.warning("Some mod requires a newer version of fly pathfinding!")
-                Logging.warning("Requested version : " .. tostring(FlyPathfinding.requiredPathfindingVersion))
+                Logging.warning("Requested version : " .. tostring(FlyPathfinding.requiredGridVersion))
                 Logging.warning("Used version : " .. tostring(usedVersion))
                 return
             else
@@ -123,7 +122,7 @@ end
 FarmlandManager.loadMapData = Utils.appendedFunction(FarmlandManager.loadMapData,FlyPathfinding.loadMapData)
 addModEventListener(FlyPathfinding)
 
---- compareVersions is used to compare the pathfinding system version found in config.xml.
+--- compareVersions is used to compare the grid version.
 --@param v1 is the required version given as string, major, minor and patch (x.x.x).
 --@param v2 is the current version of grid given as string, major, minor and patch (x.x.x).
 --@return true if the version was fine and should not have issues running on this mod.
@@ -137,10 +136,24 @@ function FlyPathfinding.compareVersions(v1, v2)
         return false
     end
 
+    local bChangeVersion = false
     if minor1 > minor2 then
-        return false
+        bChangeVersion = true
     elseif minor1 == minor2 and patch1 > patch2 then
-        return false
+        bChangeVersion = true
+    end
+
+    -- should be non breaking changes for other so in these cases delete the current grid and create from this mod that has higher version a new grid.
+    if bChangeVersion then
+        Logging.info("GridMap3D version differed in non breaking way, deleting current grid and creating a newer version.")
+        g_currentMission.gridMap3D:delete()
+        g_currentMission.gridMap3D = GridMap3D.new(FlyPathfinding.requiredGridVersion)
+        g_currentMission.gridMap3D:register(true)
+        if g_currentMission.gridMap3D:init() == false then
+            g_currentMission.gridMap3D:delete()
+            g_currentMission.gridMap3D = nil
+            return false
+        end
     end
 
     return true

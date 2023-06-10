@@ -266,9 +266,10 @@ InitObjectClass(GridMap3D, "GridMap3D")
 
 --- new creates a new grid map 3d.
 --@param customMt optional customized base table.
-function GridMap3D.new(customMt)
-    local self = Object.new(g_server ~= nil,g_client ~= nil, customMt or GridMap3D_mt)
+function GridMap3D.new(gridVersion)
+    local self = Object.new(g_server ~= nil,g_client ~= nil, GridMap3D_mt)
     -- nodeTree will contain the root node of the octree which then has references to deeper nodes.
+    self.gridVersion = gridVersion or "1.0.0"
     self.nodeTree = {}
     self.terrainSize = 2048
     -- contains all the states
@@ -296,7 +297,8 @@ function GridMap3D.new(customMt)
     self.bBottomUnderTerrain = false
     self.collisionMask = CollisionFlag.STATIC_WORLD
     self.bGridGenerated = false
-    self.configFilename = "config/config.xml"
+    self.defaultConfigFilename = "config/config.xml"
+    self.configFilename = "flyPathfinding/config.xml"
 
     -- Need to find the highest value in the messagetype , as own inserted ones need to be higher
     local messageTypeCount = 0
@@ -365,29 +367,14 @@ end
 
 
 --- getVersion called to get the version of pathfinding system.
---@return float value which indicates version.
+--@return string value which indicates version.
 function GridMap3D:getVersion()
-    local filePath = Utils.getFilename(self.configFilename, FlyPathfinding.modDir)
-    local xmlFile = loadXMLFile("TempXML", filePath)
-
-    local version = "1.0.0"
-
-    if xmlFile ~= nil then
-        if getXMLString(xmlFile, "Config#version") ~= nil then
-            version = getXMLString(xmlFile,"Config#version")
-        end
-    end
-
-    return version
+    return self.gridVersion
 end
 
 --- loadConfig called to setup the necessary variables from config.xml if found.
 function GridMap3D:loadConfig()
-    local filePath = Utils.getFilename(self.configFilename, FlyPathfinding.modDir)
-    local xmlFile = loadXMLFile("TempXML", filePath)
 
---     -- Multiplies the maxOctreePreLoops and maxOctreeGenerationLoopsPerUpdate if on dedicated server by this value
---     local dedicatedScalingFactor = nil
     -- Highest resolution leaf voxels in the octree, given in meters
     self.maxVoxelResolution = 1
     -- How many loops to do initially when loading into the game, helps to avoid creating the octree very long while the game is properly running.
@@ -399,40 +386,58 @@ function GridMap3D:loadConfig()
     -- ignoreWater if the grid should not include water as solid
     self.bIgnoreWater = true
 
-    if xmlFile ~= nil then
+    if not fileExists(g_modSettingsDirectory .. self.configFilename) then
+        if fileExists(FlyPathfinding.modDir .. self.defaultConfigFilename) then
+            local defaultConfig = loadXMLFile("TempXML", FlyPathfinding.modDir .. self.defaultConfigFilename)
+            if getXMLString(defaultConfig, "Config.octreeConfig#maxVoxelResolution") ~= nil then
+                self.maxVoxelResolution = getXMLFloat(defaultConfig,"Config.octreeConfig#maxVoxelResolution")
+            end
+            if getXMLString(defaultConfig, "Config.octreeConfig#maxOctreePreLoops") ~= nil then
+                self.maxOctreePreLoops = getXMLInt(defaultConfig,"Config.octreeConfig#maxOctreePreLoops")
+            end
+            if getXMLString(defaultConfig, "Config.octreeConfig#maxOctreeGenerationLoopsPerUpdate") ~= nil then
+                self.maxOctreeGenerationLoopsPerUpdate = getXMLInt(defaultConfig,"Config.octreeConfig#maxOctreeGenerationLoopsPerUpdate")
+            end
+            if getXMLString(defaultConfig, "Config.octreeConfig#ignoreTrees") ~= nil then
+                self.bIgnoreTrees = getXMLBool(defaultConfig,"Config.octreeConfig#ignoreTrees")
+            end
+            if getXMLString(defaultConfig, "Config.octreeConfig#ignoreWater") ~= nil then
+                self.bIgnoreWater = getXMLBool(defaultConfig,"Config.octreeConfig#ignoreWater")
+            end
+        end
+        -- as the global grid settings has not been set in the modSettings directory then need to set defaults from within this mod zip and place the settings to easy accessible location.
+        createFolder(g_modSettingsDirectory .. "flyPathfinding")
+        local config = createXMLFile("xmlFile",g_modSettingsDirectory .. self.configFilename,"octreeConfig")
+        setXMLFloat(config, "octreeConfig" .. '#maxVoxelResolution', self.maxVoxelResolution)
+        setXMLInt(config, "octreeConfig" .. '#maxOctreePreLoops', self.maxOctreePreLoops)
+        setXMLInt(config, "octreeConfig" .. '#maxOctreeGenerationLoopsPerUpdate', self.maxOctreeGenerationLoopsPerUpdate)
+        setXMLBool(config, "octreeConfig" .. '#ignoreTrees', self.bIgnoreTrees)
+        setXMLBool(config, "octreeConfig" .. '#ignoreWater', self.bIgnoreWater)
+        saveXMLFile(config)
+        delete(config)
+    else
 
---         if getXMLString(xmlFile, "Config.octreeConfig#dedicatedScalingFactor") ~= nil then
---             dedicatedScalingFactor = getXMLFloat(xmlFile,"Config.octreeConfig#dedicatedScalingFactor")
---         end
-        if getXMLString(xmlFile, "Config.octreeConfig#maxVoxelResolution") ~= nil then
-            self.maxVoxelResolution = getXMLFloat(xmlFile,"Config.octreeConfig#maxVoxelResolution")
+        local config = loadXMLFile("TempXML",g_modSettingsDirectory .. self.configFilename)
+        if getXMLString(config, "octreeConfig#maxVoxelResolution") ~= nil then
+            self.maxVoxelResolution = getXMLFloat(config,"octreeConfig#maxVoxelResolution")
         end
-        if getXMLString(xmlFile, "Config.octreeConfig#maxOctreePreLoops") ~= nil then
-            self.maxOctreePreLoops = getXMLInt(xmlFile,"Config.octreeConfig#maxOctreePreLoops")
+        if getXMLString(config, "octreeConfig#maxOctreePreLoops") ~= nil then
+            self.maxOctreePreLoops = getXMLInt(config,"octreeConfig#maxOctreePreLoops")
         end
-        if getXMLString(xmlFile, "Config.octreeConfig#maxOctreeGenerationLoopsPerUpdate") ~= nil then
-            self.maxOctreeGenerationLoopsPerUpdate = getXMLInt(xmlFile,"Config.octreeConfig#maxOctreeGenerationLoopsPerUpdate")
+        if getXMLString(config, "octreeConfig#maxOctreeGenerationLoopsPerUpdate") ~= nil then
+            self.maxOctreeGenerationLoopsPerUpdate = getXMLInt(config,"octreeConfig#maxOctreeGenerationLoopsPerUpdate")
         end
-        if getXMLString(xmlFile, "Config.octreeConfig#ignoreTrees") ~= nil then
-            self.bIgnoreTrees = getXMLBool(xmlFile,"Config.octreeConfig#ignoreTrees")
+        if getXMLString(config, "octreeConfig#ignoreTrees") ~= nil then
+            self.bIgnoreTrees = getXMLBool(config,"octreeConfig#ignoreTrees")
         end
-        if getXMLString(xmlFile, "Config.octreeConfig#ignoreWater") ~= nil then
-            self.bIgnoreWater = getXMLBool(xmlFile,"Config.octreeConfig#ignoreWater")
+        if getXMLString(config, "octreeConfig#ignoreWater") ~= nil then
+            self.bIgnoreWater = getXMLBool(config,"octreeConfig#ignoreWater")
         end
 
     end
 
---     if g_currentMission ~= nil and g_currentMission.connectedToDedicatedServer then
---         dedicatedScalingFactor = MathUtil.clamp(dedicatedScalingFactor or 4,1,10)
---     else
---         dedicatedScalingFactor = 1
---     end
-
     -- leaf node is four times the size of the highest resolution, as leaf node contains the highest resolution in a 4x4x4 grid.
     self.leafNodeResolution = self.maxVoxelResolution * 4
-
---     self.maxOctreePreLoops = self.maxOctreePreLoops * dedicatedScalingFactor
---     self.maxOctreeGenerationLoopsPerUpdate = self.maxOctreeGenerationLoopsPerUpdate * dedicatedScalingFactor
 
     -- if water should not be ignored adds it to the default static collisionmask
     if not self.bIgnoreWater then

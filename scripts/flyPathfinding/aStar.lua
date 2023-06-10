@@ -554,8 +554,6 @@ end
 
 --- loadConfig called to load some default values for the pathfinding algorithm from xml file.
 function AStar:loadConfig()
-    local filePath = Utils.getFilename("config/config.xml", FlyPathfinding.modDir)
-    local xmlFile = loadXMLFile("TempXML", filePath)
 
     -- If closed node list goes beyond this stops the search early.
     self.defaultMaxSearchedNodes = 100000
@@ -567,7 +565,10 @@ function AStar:loadConfig()
 
     self.dedicatedScalingFactor = 4
 
-    if xmlFile ~= nil then
+    if fileExists(FlyPathfinding.modDir .. "config/config.xml") then
+        local filePath = Utils.getFilename("config/config.xml", FlyPathfinding.modDir)
+        local xmlFile = loadXMLFile("TempXML", filePath)
+
         if getXMLString(xmlFile, "Config.aStarConfig#dedicatedScalingFactor") ~= nil then
             self.dedicatedScalingFactor = MathUtil.clamp(getXMLInt(xmlFile,"Config.aStarConfig#dedicatedScalingFactor") or self.dedicatedScalingFactor,1,10)
         end
