@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="utf-8" standalone="no" ?>
 <l10n>
     <texts>
-        <text name="birdFeeder" text="Vogelfütterer"/>
+        <text name="birdFeeder" text="Vogelfutterspender"/>
 		<text name="fillType_birdSeed" text="Vogelfutter" />
 		<text name="fillType_birdSeed2" text="Vogelfutter 2Kg" />
         <text name="birdFeeder_noAccess" text="Vögel kommen nicht an Ihrem Vogelhäuschen an, bitte stellen Sie es in einen offeneren Bereich"/>
         <text name="birdFeeder_infoNoAccess" text="ZUFÜHRER BEWEGEN"/>
         <text name="birdFeeder_infoNoAccessTitle" text="UNGÜLTIGE PLATZIERUNG"/>
-        <text name="function_birdFeeder" text="Platzierbarer Vogelhäuschen, denken Sie daran, Vogelfutter zu kaufen und zum Futterhäuschen zu tragen, und beobachten Sie, wie die Vögel kommen und fressen."/>
+        <text name="function_birdFeeder" text="Platzierbares Vogelhäuschen, denken Sie daran, Vogelfutter zu kaufen und zum Futterhäuschen zu tragen, und beobachten Sie, wie die Vögel kommen und fressen."/>
         <text name="typeDesc_birdSeed" text="Futter für Vögel, fügen Sie dieses Futter in das Vogelhäuschen hinzu, das Sie bei den Placeables gekauft haben." />
         <text name="unit_gramShort" text="g" />
         <text name="input_FLYPATHFINDING_DBG_PREVIOUS" text="Debuggen Vorherige" />
         <text name="input_FLYPATHFINDING_DBG_NEXT" text="Debuggen nächsten" />
-        <text name="input_FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES" text="Geschlossene Knoten umschalten" />
+        <text name="input_FLYPATHFINDING_DBG_ASTAR_SHOW_CLOSEDNODES" text="Geschlossene Nodes umschalten" />
 	</texts>
 </l10n>

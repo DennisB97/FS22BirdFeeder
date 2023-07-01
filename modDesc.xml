@@ -1,67 +1,64 @@
 ﻿<?xml version="1.0" encoding="utf-8" standalone="no" ?>
-<modDesc descVersion="74">
+<modDesc descVersion="75">
     <author>Dennis B</author>
     <version>1.0.0.0</version>
 
     <title>
         <en>Bird Feeder</en>
-        <de>Vogelfütterer</de>
+        <de>Vogelfutterspender</de>
         <fr>Mangeoire Oiseaux</fr>
     </title>
 
     <description>
-        <en><![CDATA[Decorational bird feeder with feeding functionality and birds.
+<en><![CDATA[Decorational bird feeder with feeding functionality and birds.
 
 - Bird feeder:
-  Purchase price: 300 €
-  Maintenance: 0 €
-  Can be found in the game under (Bird feeder): Construction / Animals / Others
+Purchase price: 300 $
+Can be found in the game under (Bird feeder): Construction / Animals / Others
 
 - Bird seed:
-  Purchase price: 20 €
-  Can be found in the game under (Bird seed 2Kg): Other / Pallets
+Purchase price: 20 $
+Can be found in the game under (Bird seed 2Kg): Other / Pallets
 
 - Other info
-  Multiplayer support
-  Languages: English, Deutsch, Français
-  Features flying birds which will come and eat from feeder few hours after having added seeds to feeder
-  Do note that creation of the navigation grid for birds will take few minutes at start of loading into save game, if not on dedicated server
-  FarmingSimulator2022/modSettings/flyPathfinding/config.xml has tweakable settings regarding creation of the navigation grid, if performance is slow]]></en>
-        <de><![CDATA[Dekoratives Vogelhäuschen mit Fütterungsfunktion und Vögeln.
+Multiplayer support
+Languages: English, Deutsch, Français
+Features flying birds which will come and eat from feeder few hours after having added seeds to feeder
+Do note that creation of the navigation grid for birds will take few minutes at start of loading into save game, if not on dedicated server
+FarmingSimulator2022/modSettings/flyPathfinding/config.xml has tweakable settings regarding creation of the navigation grid, if performance is slow]]></en>
+<de><![CDATA[Dekoratives Vogelhäuschen mit Fütterungsfunktion und Vögeln.
 
-- Vogelfütterer:
-  Kaufpreise: 300 €
-  Unterhalt: 0 €
-  Zu finden im Spiel unter (Vogelfütterer): Bauen / Tiere / Sonstiges
+- Vogelfutterspender:
+Kaufpreis: 300 €
+Zu finden im Spiel unter (Vogelfutterspender): Bauen / Tiere / Sonstiges
 
 - Vogelfutter:
-  Kaufpreise: 20 €
-  Zu finden im Spiel unter (Vogelfutter 2Kg): Sonstiges / Paletten
+Kaufpreis: 20 €
+Zu finden im Spiel unter (Vogelfutter 2Kg): Sonstiges / Paletten
 
 - Andere Information:
-  Sprachen: Deutsch, English, Français
-  Multiplayer-Unterstützung
-  Mit fliegenden Vögeln, wird ein paar Stunden später kommen und vom Futterhäuschen fressen
-  Beachten Sie, dass die Erstellung des Navigationsrasters für Vögel zu Beginn des Ladens in das gespeicherte Spiel einige Minuten dauern wird, wenn es sich nicht auf einem dedizierten Server befindet
-  FarmingSimulator2022/modSettings/flyPathfinding/config.xml verfügt über anpassbare Einstellungen zur Erstellung des Navigationsrasters, falls die Leistung langsam ist]]></de>
-       <fr><![CDATA[Mangeoire à oiseaux décorative avec fonction d'alimentation et oiseaux.
+Sprachen: Deutsch, English, Français
+Multiplayer-Unterstützung
+Verfügt über fliegende Vögel, die einige Stunden nach dem Einfüllen des Futters an den Futtertrog kommen und vom Futtertrog fressen.
+Beachten Sie, dass die Erstellung des Navigationsgitters für die Vögel zu Beginn des Ladens eines Spielstands einige Minuten dauert, wenn Sie nicht auf einem dedizierten Server sind.
+FarmingSimulator2022/modSettings/flyPathfinding/config.xml hat veränderbare Einstellungen bezüglich der Erstellung des Navigationsgitters, wenn die Leistung langsam ist]]></de>
+<fr><![CDATA[Mangeoire à oiseaux décorative avec fonction d'alimentation et oiseaux.
 
 - Mangeoire oiseaux:
-  Prix d'achat: 300 €
-  Entretien: 0 €
-  Se trouve dans le jeu sous (Mangeoire oiseaux) : Construction / Animaux / Autres
+Prix d'achat: 300 €
+Se trouve dans le jeu sous (Mangeoire oiseaux) : Construction / Animaux / Autres
 
 - Graines pour oiseaux:
-  Prix d'achat: 20 €
-  Se trouve dans le jeu sous (Graines pour oiseaux 2Kg) : Objets / Palettes
+Prix d'achat: 20 €
+Se trouve dans le jeu sous (Graines pour oiseaux 2Kg) : Objets / Palettes
 
 - Autre info:
-  Langues: Français, Deutsch, English
-  Multijoueur
-  Dispose d'oiseaux volants qui viendront manger de la mangeoire quelques heures après avoir ajouté des graines à la mangeoire
-  Notez que la création de la grille de navigation pour les oiseaux prendra quelques minutes au début du chargement dans le jeu, sur serveur dédié c'est plus rapide
-  FarmingSimulator2022/modSettings/flyPathfinding/config.xml a des paramètres modifiables concernant la création de la grille de navigation, si les performances sont lentes]]></fr>
-    </description>
+Langues: Français, Deutsch, English
+Multijoueur
+Dispose d'oiseaux volants qui viendront manger de la mangeoire quelques heures après avoir ajouté des graines à la mangeoire
+Notez que la création de la grille de navigation pour les oiseaux prendra quelques minutes au début du chargement dans le jeu, sur serveur dédié c'est plus rapide
+FarmingSimulator2022/modSettings/flyPathfinding/config.xml a des paramètres modifiables concernant la création de la grille de navigation, si les performances sont lentes]]></fr>
+</description>
 
     <iconFilename>icon_birdFeeder.dds</iconFilename>
     <multiplayer supported="true"/>

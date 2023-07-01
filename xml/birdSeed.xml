@@ -15,12 +15,6 @@
         <canBeSold>false</canBeSold>
         <allowLeasing>false</allowLeasing>
         <financeCategory>OTHER</financeCategory>
-        <vertexBufferMemoryUsage>53248</vertexBufferMemoryUsage>
-        <indexBufferMemoryUsage>9728</indexBufferMemoryUsage>
-        <textureMemoryUsage>1245184</textureMemoryUsage>
-        <instanceVertexBufferMemoryUsage>0</instanceVertexBufferMemoryUsage>
-        <instanceIndexBufferMemoryUsage>0</instanceIndexBufferMemoryUsage>
-        <audioMemoryUsage>0</audioMemoryUsage>
     </storeData>
 
     <base>
