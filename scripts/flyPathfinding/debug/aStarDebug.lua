@@ -28,7 +28,6 @@ function AStarDebug:delete()
     if g_inputBinding ~= nil then
         g_inputBinding:removeActionEventsByTarget(self)
     end
-    self.debugPaths = nil
 
     for _,aStar in ipairs(AStarDebug.aStars) do
         aStar:delete()
@@ -148,7 +147,7 @@ function AStarDebug.aStarDebugPathCreate(debugClass,x,y,z,x2,y2,z2)
 
     local pathfinder = AStar.new(true,false)
     pathfinder:register(true)
-    pathfinder:find({x=tonumber(x),y=tonumber(y),z=tonumber(z)},{x=tonumber(x2),y=tonumber(y2),z=tonumber(z2)},true,true,true)
+    pathfinder:find({x=tonumber(x),y=tonumber(y),z=tonumber(z)},{x=tonumber(x2),y=tonumber(y2),z=tonumber(z2)},true,true,true,nil,false)
     table.insert(AStarDebug.aStars,pathfinder)
 
 end

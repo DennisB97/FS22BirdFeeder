@@ -212,10 +212,8 @@ function CatmullRomSpline:getSplineInformationAtDistance(distance)
     distance = MathUtil.clamp(distance,0,splineLength)
     local lastIndex = #self.segments
 
-    local position = {}
+    local position = nil
     local tangentDirection = {}
-    local biNormalDirection = {}
-    local normalDirection = {}
 
     if distance == 0 then
         tangentDirection.x, tangentDirection.y, tangentDirection.z = MathUtil.vector3Normalize(self.segments[1].m1.x,self.segments[1].m1.y,self.segments[1].m1.z)
@@ -240,8 +238,8 @@ function CatmullRomSpline:getSplineInformationAtDistance(distance)
         end
     end
 
-    biNormalDirection = CatmullRomSpline.getRightVector(tangentDirection)
-    normalDirection = CatmullRomSpline.getUpVector(tangentDirection,biNormalDirection)
+    local biNormalDirection = CatmullRomSpline.getRightVector(tangentDirection)
+    local normalDirection = CatmullRomSpline.getUpVector(tangentDirection,biNormalDirection)
 
     return position, tangentDirection, biNormalDirection, normalDirection
 end
@@ -266,7 +264,7 @@ function CatmullRomSpline.getPosition(segment,t)
     -- The polynomial standard form used, which have had precomputed coefficients a,b and tangent at p1(m1) p2(m2)
     -- where p0 is t = 0 so p1 position and p1 is p2 position in the formula
     -- p(t) = (2p0 + m0 - 2p1 + m1)t^3 + (-3p0 + 3p1 + 2m0 - m1)t^2 + m0t + p0
-    local point = {}
+    local point = {x=0,y=0,z=0}
     point.x = segment.a.x * t * t * t + segment.b.x * t * t + segment.m1.x * t + segment.p1.x;
     point.y = segment.a.y * t * t * t + segment.b.y * t * t + segment.m1.y * t + segment.p1.y;
     point.z = segment.a.z * t * t * t + segment.b.z * t * t + segment.m1.z * t + segment.p1.z;
@@ -283,7 +281,7 @@ function CatmullRomSpline.getForwardDirection(segment,t)
     end
 
     local tangent = CatmullRomSpline.getDerivative(segment,t)
-    local forwardDirection = {}
+    local forwardDirection = {x=0,y=0,z=0}
     forwardDirection.x,forwardDirection.y,forwardDirection.z = MathUtil.vector3Normalize(tangent.x,tangent.y,tangent.z)
 
     return forwardDirection
@@ -324,8 +322,7 @@ function CatmullRomSpline:getSplineLength()
     if self.segments == nil then
         return 0
     end
---
---     return self.segments[#self.segments].length + self.segments[#self.segments].segmentStartLength
+
     return self.length
 end
 
@@ -341,7 +338,7 @@ function CatmullRomSpline.getDerivative(segment,t)
         return nil
     end
 
-    local tangent = {}
+    local tangent = {x=0,y=0,z=0}
 
     tangent.x = (6 * t * t - 6 * t) * segment.p1.x + (3 * t * t - 4 * t + 1) * segment.m1.x + (-6 * t * t + 6 * t) * segment.p2.x
         + (3 * t * t - 2 * t) * segment.m2.x;
@@ -362,8 +359,9 @@ function CatmullRomSpline.getRightVector(forwardVector)
         return nil
     end
 
-    local biNormal = {}
+    local biNormal = {x=0,y=0,z=0}
     biNormal.x, biNormal.y, biNormal.z = MathUtil.vector3Normalize(MathUtil.crossProduct(forwardVector.x,forwardVector.y,forwardVector.z,0,1,0))
+
     return biNormal
 end
 
@@ -376,10 +374,132 @@ function CatmullRomSpline.getUpVector(forwardVector,rightVector)
         return nil
     end
 
-    local normal = {}
+    local normal = {x=0,y=0,z=0}
     normal.x, normal.y, normal.z = MathUtil.vector3Normalize(MathUtil.crossProduct(rightVector.x,rightVector.y,rightVector.z,forwardVector.x,forwardVector.y,forwardVector.z))
+
     return normal
 end
+
+--- getClosePositionOnSpline is used for getting an esimated close point from a given position to spline.
+--@param position is from position to go to spline, given as {x=,y=,z=}.
+--@param accuracy how accurate in meters to get position on the curve.
+--@return position on spline as {x=,y=,z=},distance along spline the position is found at in float, direction to it as {x=,y=,z=}, distance to it in float, and segment index it was on.
+function CatmullRomSpline:getClosePositionOnSpline(position,accuracy)
+    if position == nil then
+        return nil
+    end
+
+    accuracy = accuracy or 0.10
+    local segments = #self.segments
+    local segment = nil
+    local segmentIndex = 1
+    if segments > 1 then
+        segment, segmentIndex = self:SearchCloseSegment(position)
+    else
+        segment = self.segments[1]
+    end
+
+    local positionOnSpline, splineDistance,directionToSpline, distanceToSpline = self:getClosePositionOnCurve(position,accuracy,segment)
+
+    return positionOnSpline, splineDistance,directionToSpline, distanceToSpline, segmentIndex
+end
+
+--- SearchCloseSegment gets the nearest estimated segment from a given position.
+--@param position to try find nearby segment.
+--@return segment and segment index.
+function CatmullRomSpline:SearchCloseSegment(position)
+
+    local shortestDistance = 99999999
+    local shortestIndex = 1
+
+
+    for i,segment in ipairs(self.segments) do
+        local splinePositionX, splinePositionY, splinePositionZ = MathUtil.getClosestPointOnLineSegment(segment.p1.x,segment.p1.y,segment.p1.z,segment.p2.x,segment.p2.y,segment.p2.z,position.x,position.y,position.z)
+        local distance = MathUtil.vector3Length(splinePositionX - position.x, splinePositionY - position.y, splinePositionZ - position.z)
+
+        if distance < shortestDistance then
+            shortestDistance = distance
+            shortestIndex = i
+        end
+    end
+
+    return self.segments[shortestIndex], shortestIndex
+
+end
+
+--- getClosePositionOnCurve estimates shortest distance position on curve based on given accuracy value.
+--@param position from where to trace nearest position on curve.
+--@param accuracy is meter value of how accurately needs to search.
+--@param segment on which spline curve segment to look from.
+--@return position on spline as {x=,y=,z=},distance along spline the position is found at in float, direction to it as {x=,y=,z=}, distance to it in float.
+function CatmullRomSpline:getClosePositionOnCurve(position,accuracy,segment)
+    if position == nil or segment == nil then
+        return nil
+    end
+
+    accuracy = accuracy or 0.10
+    local positionOnSpline = nil
+    local distance = 0
+    if CatmullRomSpline.isNearlySamePosition(position,segment.p1,accuracy) then
+        positionOnSpline, distance = segment.p1, segment.segmentStartLength
+    elseif CatmullRomSpline.isNearlySamePosition(position,segment.p2,accuracy) then
+        positionOnSpline, distance = segment.p2, segment.segmentStartLength + segment.length
+    else
+        positionOnSpline, distance = self:binarySearchCloseCurvePosition(segment,segment.segmentStartLength, segment.segmentStartLength + segment.length,position,accuracy)
+    end
+
+    local vectorToSpline = {x=0,y=0,z=0}
+    vectorToSpline.x = positionOnSpline.x - position.x
+    vectorToSpline.y = positionOnSpline.y - position.y
+    vectorToSpline.z = positionOnSpline.z - position.z
+
+    local directionToSpline = {x=0,y=0,z=0}
+    if vectorToSpline.x ~= 0 or vectorToSpline.y ~= 0 or vectorToSpline.z ~= 0 then
+        directionToSpline.x, directionToSpline.y, directionToSpline.z = MathUtil.vector3Normalize(vectorToSpline.x, vectorToSpline.y, vectorToSpline.z)
+    end
+
+    local distanceToSpline = MathUtil.vector3Length(vectorToSpline.x,vectorToSpline.y,vectorToSpline.z)
+
+    return positionOnSpline, distance, directionToSpline, distanceToSpline
+end
+
+--- binarySearchCloseCurvePosition iteratively searches for the estimated close position on curve from a position not on curve.
+--@param segment is from which curve segment to search from.
+--@param minDistance current min distance to compare from.
+--@param maxDistance current max distance to compare from.
+--@param position is constant position from which to trace to spline position.
+--@param accuracy how accurately in meters enough to satisfy search.
+--@return position as {x=,y=,z=}, distance along the spline the position is found at.
+function CatmullRomSpline:binarySearchCloseCurvePosition(segment,minDistance,maxDistance,position,accuracy)
+
+    if maxDistance < minDistance then
+        printCallstack()
+        DebugUtil.printTableRecursively(self)
+        Logging.warning("CatmullRomSpline:binarySearchCloseCurvePosition: close point on curve wasn't found, bad accuracy value?")
+        return nil
+    end
+
+    local middleDistance = (minDistance + maxDistance) / 2
+
+    if (maxDistance - minDistance) < accuracy then
+        return CatmullRomSpline.getPosition(segment,self:getEstimatedT(segment,middleDistance)), middleDistance
+    end
+
+    local minPosition = CatmullRomSpline.getPosition(segment,self:getEstimatedT(segment,minDistance))
+    local maxPosition = CatmullRomSpline.getPosition(segment,self:getEstimatedT(segment,maxDistance))
+
+    local distanceToMin = MathUtil.vector3Length(position.x - minPosition.x, position.y - minPosition.y, position.z - minPosition.z)
+    local distanceToMax = MathUtil.vector3Length(position.x - maxPosition.x, position.y - maxPosition.y, position.z - maxPosition.z)
+
+
+    if distanceToMin < distanceToMax then
+        return self:binarySearchCloseCurvePosition(segment,minDistance,middleDistance,position,accuracy)
+    else
+        return self:binarySearchCloseCurvePosition(segment,middleDistance,maxDistance,position,accuracy)
+    end
+
+end
+
 
 ---------- SPLINE CREATOR -------------
 
@@ -579,6 +699,8 @@ function CatmullRomSplineCreator:loadConfig()
                 dedicatedScalingFactor = 1
             end
         end
+
+        delete(xmlFile)
     end
 
     if self.isServer == true and g_currentMission ~= nil and g_currentMission.connectedToDedicatedServer then
@@ -650,15 +772,16 @@ function CatmullRomSplineCreator:adjustStartPosition()
         return
     end
 
-    local direction = {}
+    local direction = {x=0,y=0,z=0}
     direction.x, direction.y, direction.z = MathUtil.vector3Normalize(self.points[1].x - self.points[2].x,self.points[1].y - self.points[2].y,self.points[1].z - self.points[2].z)
 
     if CatmullRomSpline.isNearlyEqualDirection(direction,self.lastDirection,self.roundSharpAngleLimit) then
         local offsetDirection = self:getSmoothOffsetVector(self.points[1],{x=self.lastDirection.x * -1,y=self.lastDirection.y * -1, z=self.lastDirection.z * -1},{x=direction.x * -1, y=direction.y * -1,z=direction.z * -1})
         -- could add raycast to make sure not going inside static objects if needed here...
-        local newPosition = {}
+        local newPosition = {x=0,y=0,z=0}
         newPosition.x,newPosition.y,newPosition.z = self.points[1].x + (self.roundConnectionRadius * offsetDirection.x * 2), self.points[1].y + (self.roundConnectionRadius * offsetDirection.y * 2), self.points[1].z + (self.roundConnectionRadius * offsetDirection.z * 2)
         table.insert(self.points,2,newPosition)
+
         self.pointCount = self.pointCount + 1
     end
 
@@ -963,8 +1086,8 @@ function CatmullRomSplineCreator:makeCurvedAtIndex(index)
         return false
     end
 
-    local direction1 = {}
-    local direction2 = {}
+    local direction1 = {x=0,y=0,z=0}
+    local direction2 = {x=0,y=0,z=0}
 
     direction1.x,direction1.y,direction1.z = MathUtil.vector3Normalize(self.spline.segments[index-1].p2.x - self.spline.segments[index-1].p1.x,self.spline.segments[index-1].p2.y - self.spline.segments[index-1].p1.y,self.spline.segments[index-1].p2.z - self.spline.segments[index-1].p1.z)
     direction2.x,direction2.y,direction2.z = MathUtil.vector3Normalize(self.spline.segments[index].p1.x - self.spline.segments[index].p2.x,self.spline.segments[index].p1.y - self.spline.segments[index].p2.y,self.spline.segments[index].p1.z - self.spline.segments[index].p2.z)
@@ -972,9 +1095,9 @@ function CatmullRomSplineCreator:makeCurvedAtIndex(index)
     -- check if according to limit value if needs a new segment between the two segments
     if CatmullRomSpline.isNearlyEqualDirection(direction1,direction2,self.roundSharpAngleLimit) then
 
-        local sidePoint = {}
-        local reverseSidePoint = {}
-        local reverseSideDirection = {}
+        local sidePoint = {x=0,y=0,z=0}
+        local reverseSidePoint = {x=0,y=0,z=0}
+        local reverseSideDirection = {x=0,y=0,z=0}
 
         local offsetDirection = self:getSmoothOffsetVector(self.spline.segments[index-1].p2,{x=direction1.x * -1, y=direction1.y * -1,z=direction1.z * -1},{x=direction2.x * -1,y=direction2.y * -1,z = direction2.z * -1})
 
@@ -1018,12 +1141,12 @@ end
 --@return offsetDirection which is the direction the position can be moved towards.
 function CatmullRomSplineCreator:getSmoothOffsetVector(position,direction1,direction2)
 
-    local offsetDirection = {}
-    local crossResult = {}
+    local offsetDirection = {x=0,y=0,z=0}
+    local crossResult = {x=0,y=0,z=0}
     crossResult.x, crossResult.y, crossResult.z = MathUtil.crossProduct(direction1.x, direction1.y, direction1.z, direction2.x, direction2.y, direction2.z)
 
     if  tostring(crossResult.x) == "nan" or tostring(crossResult.y) == "nan" or tostring(crossResult.z) == "nan" or CatmullRomSpline.isNearlySamePosition(crossResult,{x=0,y=0,z=0}) then
-        local crossWorldUp = {}
+        local crossWorldUp = {x=0,y=0,z=0}
         crossWorldUp.x, crossWorldUp.y, crossWorldUp.z = MathUtil.crossProduct(direction2.x, direction2.y, direction2.z,0,1,0)
         if  tostring(crossWorldUp.x) == "nan" or tostring(crossWorldUp.y) == "nan" or tostring(crossWorldUp.z) == "nan" or CatmullRomSpline.isNearlySamePosition(crossWorldUp,{x=0,y=0,z=0}) then
             -- just takes the cross vector of direction and world x vector
@@ -1034,12 +1157,12 @@ function CatmullRomSplineCreator:getSmoothOffsetVector(position,direction1,direc
         end
 
     else
-        local tempPoint = {}
-        local tempPoint2 = {}
+        local tempPoint = {x=0,y=0,z=0}
+        local tempPoint2 = {x=0,y=0,z=0}
         tempPoint.x, tempPoint.y, tempPoint.z = position.x + (1 * direction2.x),position.y + (1 * direction2.y),position.z + (1 * direction2.z)
         tempPoint2.x, tempPoint2.y, tempPoint2.z = position.x + (1 * direction1.x),position.y + (1 * direction1.y),position.z + (1 * direction1.z)
 
-        local reverseDirection2 = {}
+        local reverseDirection2 = {x=0,y=0,z=0}
         reverseDirection2.x = direction2.x * -1
         reverseDirection2.y = direction2.y * -1
         reverseDirection2.z = direction2.z * -1
@@ -1113,8 +1236,8 @@ function CatmullRomSplineCreator:generateSegmentValues(segment)
     local t2 = self:getPointsDistance(segment.p1,segment.p2)
     local t3 = self:getPointsDistance(segment.p2,segment.p3)
 
-    local m1 = {}
-    local m2 = {}
+    local m1 = {x=0,y=0,z=0}
+    local m2 = {x=0,y=0,z=0}
     m1.x = (1.0 - self.tension) * (segment.p2.x - segment.p1.x + t2 * ((segment.p1.x - segment.p0.x) / t1 - (segment.p2.x - segment.p0.x) / (t1 + t2)))
     m1.y = (1.0 - self.tension) * (segment.p2.y - segment.p1.y + t2 * ((segment.p1.y - segment.p0.y) / t1 - (segment.p2.y - segment.p0.y) / (t1 + t2)))
     m1.z = (1.0 - self.tension) * (segment.p2.z - segment.p1.z + t2 * ((segment.p1.z - segment.p0.z) / t1 - (segment.p2.z - segment.p0.z) / (t1 + t2)))
@@ -1123,12 +1246,12 @@ function CatmullRomSplineCreator:generateSegmentValues(segment)
     m2.y = (1.0 - self.tension) * (segment.p2.y - segment.p1.y + t2 * ((segment.p3.y - segment.p2.y) / t3 - (segment.p3.y - segment.p1.y) / (t2 + t3)))
     m2.z = (1.0 - self.tension) * (segment.p2.z - segment.p1.z + t2 * ((segment.p3.z - segment.p2.z) / t3 - (segment.p3.z - segment.p1.z) / (t2 + t3)))
 
-    segment.a = {}
+    segment.a = {x=0,y=0,z=0}
     segment.a.x = (2*segment.p1.x) + m1.x - (2*segment.p2.x) + m2.x
     segment.a.y = (2*segment.p1.y) + m1.y - (2*segment.p2.y) + m2.y
     segment.a.z = (2*segment.p1.z) + m1.z - (2*segment.p2.z) + m2.z
 
-    segment.b = {}
+    segment.b = {x=0,y=0,z=0}
     segment.b.x = (-3*segment.p1.x) + (3*segment.p2.x) - (2*m1.x) - m2.x
     segment.b.y = (-3*segment.p1.y) + (3*segment.p2.y) - (2*m1.y) - m2.y
     segment.b.z = (-3*segment.p1.z) + (3*segment.p2.z) - (2*m1.z) - m2.z

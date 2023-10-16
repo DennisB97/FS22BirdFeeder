@@ -160,7 +160,7 @@ function CatmullRomDebug:update(dt)
         followPosition,forwardDirection,rightDirection,upDirection = currentSpline.getSplineInformationAtDistance(currentSpline,self.debugFollowDistance3)
         DebugUtil.drawOverlapBox(followPosition.x, followPosition.y, followPosition.z, 0, 0, 0, 0.25, 0.25, 0.25, 0, 0, 1)
 
-        local forwardEndPoint = {}
+        local forwardEndPoint = {x=0,y=0,z=0}
         forwardEndPoint.x = followPosition.x + (forwardDirection.x * 3)
         forwardEndPoint.y = followPosition.y + (forwardDirection.y * 3)
         forwardEndPoint.z = followPosition.z + (forwardDirection.z * 3)

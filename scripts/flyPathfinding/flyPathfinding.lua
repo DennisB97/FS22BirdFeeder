@@ -57,10 +57,9 @@ SOFTWARE.
     Did not see any possiblity to avoid including very thin meshes near terrain like the roads in the octree grid as solid, could cut some generation time by a good solution.
 
 
-    If copying pathfinding to another mod should include the whole flyPathfinding folder and create the grid in same way as here, to avoid version issues if grid, AStar or CatmullRomSpline/Creator gets any breaking changes.
+    If copying pathfinding to another mod can include the whole flyPathfinding folder then creates the grid in same way as here, to avoid version issues if grid, AStar or CatmullRomSpline/Creator gets any breaking changes.
     Original place for the set of scripts can be found at https://github.com/DennisB97/FS22FlyPathfinding
 --]]
-
 
 ---@class FlyPathfinding takes care of creating the pathfinding grid object.
 FlyPathfinding = {}
@@ -69,7 +68,7 @@ FlyPathfinding.modDir = g_currentModDirectory .. "scripts/flyPathfinding/"
 -- the g_currentMission.gridMap3D might ne valid if some other mod had it too, but if the required version was lower then the following bool is false to indicate can't use pathfinding until upgraded.
 FlyPathfinding.bPathfindingEnabled = false
 -- grid version, to know if there has been any changes to the Grid system when multiple mods use this pathfinding system as the grid is shared between mods.
-FlyPathfinding.requiredGridVersion = "1.0.0"
+FlyPathfinding.requiredGridVersion = "1.0.1"
 
 --- deleteMap is FS22 function called after exiting played save.
 function FlyPathfinding:deleteMap(savegame)
@@ -87,6 +86,13 @@ end
 function FlyPathfinding:loadMapData(xmlFile)
 
     if g_currentMission ~= nil and g_server ~= nil then
+
+        -- Enable here possible debug commands with a custom name for classes that are part of flypathfinding but local to each mod.
+        addConsoleCommand( 'AStarFlypathfindingDebugBirdFeeder', 'toggle debugging for AStar pathfinding', 'aStarDebugToggle', AStar)
+        addConsoleCommand( 'AStarFlypathfindingDebugPathCreateBirdFeeder', 'Given two vector positions creates a debug path between those', 'aStarDebugPathCreate', AStarDebug)
+        addConsoleCommand( 'CatmullRomDebugBirdFeeder', 'toggle debugging for catmullrom', 'catmullRomDebugToggle', CatmullRomSplineCreator)
+        addConsoleCommand( 'CatmullRomDebugSplineCreateBirdFeeder', 'given at least 2 x y z points creates a catmullrom', 'catmullRomDebugSplineCreate', CatmullRomDebug)
+
         if g_currentMission.gridMap3D == nil then
             g_currentMission.gridMap3D = GridMap3D.new(FlyPathfinding.requiredGridVersion)
             g_currentMission.gridMap3D:register(true)
@@ -95,12 +101,6 @@ function FlyPathfinding:loadMapData(xmlFile)
                 g_currentMission.gridMap3D = nil
                 return
             end
-            -- adds a debugging console command to be able to visualize the octree and A* pathfinding.
-            addConsoleCommand( 'GridMap3DOctreeDebug', 'toggle debugging for octree', 'octreeDebugToggle', g_currentMission.gridMap3D)
-            addConsoleCommand( 'AStarFlypathfindingDebug', 'toggle debugging for AStar pathfinding', 'aStarDebugToggle', AStar)
-            addConsoleCommand( 'AStarFlypathfindingDebugPathCreate', 'Given two vector positions creates a debug path between those', 'aStarDebugPathCreate', AStarDebug)
-            addConsoleCommand( 'CatmullRomDebug', 'toggle debugging for catmullrom', 'catmullRomDebugToggle', CatmullRomSplineCreator)
-            addConsoleCommand( 'CatmullRomDebugSplineCreate', 'given at least 2 x y z points creates a catmullrom', 'catmullRomDebugSplineCreate', CatmullRomDebug)
             FlyPathfinding.bPathfindingEnabled = true
         else
             Logging.info("Some other mod has created the pathfinding grid before this mod at: " .. FlyPathfinding.modDir)
@@ -116,7 +116,6 @@ function FlyPathfinding:loadMapData(xmlFile)
             end
         end
     end
-
 end
 
 FarmlandManager.loadMapData = Utils.appendedFunction(FarmlandManager.loadMapData,FlyPathfinding.loadMapData)
@@ -130,7 +129,7 @@ function FlyPathfinding.compareVersions(v1, v2)
     local major1, minor1, patch1 = string.match(v1, "(%d+)%.(%d+)%.(%d+)")
     local major2, minor2, patch2 = string.match(v2, "(%d+)%.(%d+)%.(%d+)")
     major1, minor1, patch1 = tonumber(major1),tonumber(minor1),tonumber(patch1)
-    major2, minor2, patch2 = tonumber(major2),tonumber(minor2),tonumber(patch1)
+    major2, minor2, patch2 = tonumber(major2),tonumber(minor2),tonumber(patch2)
 
     if major1 ~= major2 then
         return false

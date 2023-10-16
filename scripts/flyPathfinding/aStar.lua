@@ -19,285 +19,6 @@ SOFTWARE.
 
 ]]
 
--- All the directions that pathfinding can take within the octree grid.
-local ENavDirection = {NORTH = 1, EAST = 2, SOUTH = 3, WEST = 4, UP = 5, DOWN = 6}
-
--- Lookuptable for getting opposite direction from given key direction.
-local mirroredDirectionTable = {
-    [ENavDirection.NORTH] = ENavDirection.SOUTH,
-    [ENavDirection.EAST] = ENavDirection.WEST,
-    [ENavDirection.SOUTH] = ENavDirection.NORTH,
-    [ENavDirection.WEST] = ENavDirection.EAST,
-    [ENavDirection.UP] = ENavDirection.DOWN,
-    [ENavDirection.DOWN] = ENavDirection.UP,
-}
-
--- Lookuptable for getting next node, which is not within leaf node's tiniest voxels.
--- node provided as table of {GridMap3DNode,leafVoxelIndex(-1 - 63)}.
-local nodeAdvancementTable = {
-    [ENavDirection.NORTH] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].xNeighbour,-1}
-    end,
-    [ENavDirection.EAST] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].zNeighbour,-1}
-    end,
-    [ENavDirection.SOUTH] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].xMinusNeighbour,-1}
-    end,
-    [ENavDirection.WEST] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].zMinusNeighbour,-1}
-    end,
-    [ENavDirection.UP] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].yNeighbour,-1}
-    end,
-    [ENavDirection.DOWN] = function(node)
-        if node == nil or node[1] == nil then
-            return {nil,-1}
-        end
-        return {node[1].yMinusNeighbour,-1}
-    end,
-}
-
--- Lookuptable for getting all 4 nodes on edge from given key direction side.
--- node provided as table of {GridMap3DNode,leafVoxelIndex(-1 - 63)}.
-local gridNodeChildrenWallPerDirection = {
-    [ENavDirection.NORTH] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[2],-1},{node[1].children[4],-1},{node[1].children[6],-1},{node[1].children[8],-1}}
-    end,
-    [ENavDirection.EAST] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[3],-1},{node[1].children[4],-1},{node[1].children[7],-1},{node[1].children[8],-1}}
-    end,
-    [ENavDirection.SOUTH] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[1],-1},{node[1].children[3],-1},{node[1].children[7],-1},{node[1].children[5],-1}}
-    end,
-    [ENavDirection.WEST] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[1],-1},{node[1].children[2],-1},{node[1].children[5],-1},{node[1].children[6],-1}}
-    end,
-    [ENavDirection.UP] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[5],-1},{node[1].children[6],-1},{node[1].children[7],-1},{node[1].children[8],-1}}
-    end,
-    [ENavDirection.DOWN] = function(node)
-        if node == nil or node[1] == nil or node[1].children == nil then
-            return {}
-        end
-        return {{node[1].children[1],-1},{node[1].children[2],-1},{node[1].children[3],-1},{node[1].children[4],-1}}
-    end,
-}
-
--- Lookuptable for getting the outer neighbour leaf voxel.
--- node provided as table of {GridMap3DNode,leafVoxelIndex(-1 - 63)}.
-local gridLeafNodeChildPerDirection = {
-        [ENavDirection.NORTH] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            -- if neighbour is same size as leaf node and not completely non-solid then can get the neighbouring leaf voxel
-            if node[1].xNeighbour ~= nil and node[1].xNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].xNeighbour,-1}) then
-                    return {node[1].xNeighbour,node[2] - 3}
-            -- else just takes the leaf node itself as possible open node
-            elseif node[1].xNeighbour ~= nil then
-                    return {node[1].xNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-        [ENavDirection.EAST] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            if node[1].zNeighbour ~= nil and node[1].zNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].zNeighbour,-1}) then
-                    return {node[1].zNeighbour,node[2] - 12}
-            elseif node[1].zNeighbour ~= nil then
-                    return {node[1].zNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-        [ENavDirection.SOUTH] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            if node[1].xMinusNeighbour ~= nil and node[1].xMinusNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].xMinusNeighbour,-1}) then
-                    return {node[1].xMinusNeighbour,node[2] + 3}
-            elseif node[1].xMinusNeighbour ~= nil then
-                    return {node[1].xMinusNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-        [ENavDirection.WEST] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            if node[1].zMinusNeighbour ~= nil and node[1].zMinusNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].zMinusNeighbour,-1}) then
-                    return {node[1].zMinusNeighbour,node[2] + 12}
-            elseif node[1].zMinusNeighbour ~= nil then
-                    return {node[1].zMinusNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-        [ENavDirection.UP] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            if node[1].yNeighbour ~= nil and node[1].yNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].yNeighbour,-1}) then
-                    return {node[1].yNeighbour,node[2] + 16 - 64}
-            elseif node[1].yNeighbour ~= nil then
-                    return {node[1].yNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-        [ENavDirection.DOWN] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] == -1 then
-                return {nil, -1}
-            end
-
-            if node[1].yMinusNeighbour ~= nil and node[1].yMinusNeighbour.size == node[1].size and GridMap3DNode.isNodeSolid({node[1].yMinusNeighbour,-1}) then
-                    return {node[1].yMinusNeighbour,node[2] + 64 - 16}
-            elseif node[1].yMinusNeighbour ~= nil then
-                    return {node[1].yMinusNeighbour,-1}
-            end
-
-            return {nil,-1}
-            end,
-}
--- Lookuptable for getting all the leaf node's voxels on the edge for given key direction.
-local gridLeafNodeChildrenWallPerDirection = {
-        [ENavDirection.NORTH] = function()
-            return {[3] = 3,[7] = 7,[11] = 11,[15] = 15,[19] = 19,[23] = 23,[27] = 27,[31] = 31,[35] = 35,[39] = 39,[43] = 43,[47] = 47,[51] = 51,[55] = 55,[59] = 59,[63] = 63}
-            end,
-        [ENavDirection.EAST] = function()
-            return {[12] = 12,[13] = 13,[14] = 14,[15] = 15,[28] = 28,[29] = 29,[30] = 30,[31] = 31,[44] = 44,[45] = 45,[46] = 46,[47] = 47,[60] = 60,[61] = 61,[62] = 62,[63] = 63}
-            end,
-        [ENavDirection.SOUTH] = function()
-            return {[0] = 0,[4] = 4,[8] = 8,[12] = 12,[16] = 16,[20] = 20,[24] = 24,[28] = 28,[32] = 32,[36] = 36,[40] = 40,[44] = 44,[48] = 48,[52] = 52,[56] = 56,[60] = 60}
-            end,
-        [ENavDirection.WEST] = function()
-            return {[0] = 0,[1] = 1,[2] = 2,[3] = 3,[16] = 16,[17] = 17,[18] = 18,[19] = 19,[32] = 32,[33] = 33,[34] = 34,[35] = 35,[48] = 48,[49] = 49,[50] = 50,[51] = 51}
-            end,
-        [ENavDirection.UP] = function()
-            return {[48] = 48,[49] = 49,[50] = 50,[51] = 51,[52] = 52,[53] = 53,[54] = 54,[55] = 55,[56] = 56,[57] = 57,[58] = 58,[59] = 59,[60] = 60,[61] = 61,[62] = 62,[63] = 63}
-            end,
-        [ENavDirection.DOWN] = function()
-            return {[0] = 0,[1] = 1,[2] = 2,[3] = 3,[4] = 4,[5] = 5,[6] = 6,[7] = 7,[8] = 8,[9] = 9,[10] = 10,[11] = 11,[12] = 12,[13] = 13,[14] = 14,[15] = 15}
-            end,
-}
--- Lookuptable for returning the advancing to next voxel index or leaf node with given key direction.
--- node provided as table of {GridMap3DNode,leafVoxelIndex(-1 - 63)}.
-local leafNodeAdvancementTable = {
-        [ENavDirection.NORTH] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            -- if current leaf voxel index indicates being on the edge, then new node is in outer neighbour
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-            -- if not on edge then the next leaf voxel is within this same node, increments the index only.
-            return {node[1],node[2] + 1}
-            end,
-        [ENavDirection.EAST] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-
-            return {node[1],node[2] + 4}
-            end,
-        [ENavDirection.SOUTH] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-
-            return {node[1],node[2] - 1}
-            end,
-        [ENavDirection.WEST] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-
-            return {node[1],node[2] - 4}
-            end,
-        [ENavDirection.UP] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-
-            return {node[1],node[2] + 16}
-            end,
-        [ENavDirection.DOWN] = function(node,direction)
-            if node == nil or node[1] == nil or node[2] < 0 then
-                return {nil,-1}
-            end
-
-            local wallLeafNodes = gridLeafNodeChildrenWallPerDirection[direction]()
-            if wallLeafNodes[node[2]] ~= nil then
-                return gridLeafNodeChildPerDirection[direction](node)
-            end
-
-            return {node[1],node[2] - 16}
-            end,
-}
-
-
 ---@class AStarOpenQueue
 --Min max heap for the open nodes queue.
 AStarOpenQueue = {}
@@ -537,8 +258,8 @@ function AStar.new(isServer,isClient)
     self.pathingTime = 0
     self.goalPath = nil
     self.callback = nil
-    self.realStartLocation = {}
-    self.realGoalLocation = {}
+    self.realStartLocation = {x=0,y=0,z=0}
+    self.realGoalLocation = {x=0,y=0,z=0}
     self.maxSearchedNodes = 0
     self.maxPathfindLoops = 0
     self.defaultMaxPathfindLoops = 0
@@ -582,12 +303,14 @@ function AStar:loadConfig()
         if getXMLString(xmlFile, "config.aStarConfig#heuristicScalingMaxSize") ~= nil then
             self.heuristicScalingMaxSize = getXMLInt(xmlFile,"Config.aStarConfig#heuristicScalingMaxSize")
         end
+
+        delete(xmlFile)
     end
 
-    if self.isServer == true and g_currentMission ~= nil and g_currentMission.connectedToDedicatedServer then
-        dedicatedScalingFactor = MathUtil.clamp(dedicatedScalingFactor or 2,1,10)
+    if self.isServer and g_currentMission ~= nil and g_currentMission.connectedToDedicatedServer then
+        self.dedicatedScalingFactor = MathUtil.clamp(self.dedicatedScalingFactor,1,10)
     else
-        dedicatedScalingFactor = 1
+        self.dedicatedScalingFactor = 1
     end
 
 end
@@ -602,8 +325,6 @@ function AStar:clean()
     self.bSmoothPath = true
     self.goalGridNode = nil
     self.startGridNode = nil
-    self.realStartLocation = {}
-    self.realGoalLocation = {}
     self.bestNode = nil
     self.closedNodeCount = 0
     self.pathingTime = 0
@@ -654,13 +375,13 @@ function AStar:find(startPosition,goalPosition,findNearest,allowSolidStart,allow
         return false
     end
 
-    allowSolidStart = (allowSolidStart ~= nil and {allowSolidStart} or {false})[1]
+    self.allowSolidStart = (allowSolidStart ~= nil and {allowSolidStart} or {false})[1]
     self.allowSolidGoal = (allowSolidGoal ~= nil and {allowSolidGoal} or {false})[1]
     self.bSmoothPath = (smoothPath ~= nil and {smoothPath} or {true})[1]
     self.maxSearchedNodes = customSearchNodeLimit or self.defaultMaxSearchedNodes
     self.maxPathfindLoops = (customPathLoopAmount or self.defaultMaxPathfindLoops) * self.dedicatedScalingFactor
-    self.realStartLocation = startPosition
-    self.realGoalLocation = goalPosition
+    self.realStartLocation.x, self.realStartLocation.y, self.realStartLocation.z = startPosition.x, startPosition.y, startPosition.z
+    self.realGoalLocation.x, self.realGoalLocation.y, self.realGoalLocation.z = goalPosition.x, goalPosition.y, goalPosition.z
     self.startGridNode = g_currentMission.gridMap3D:getGridNode(startPosition,allowSolidStart)
     self.goalGridNode = g_currentMission.gridMap3D:getGridNode(goalPosition,allowSolidGoal)
     self.bFindNearest = (findNearest ~= nil and {findNearest} or {true})[1]
@@ -783,7 +504,7 @@ function AStar:doSearch()
         return false
     end
 
-    local bestNodeF = 9999999999
+    local bestNodeF = 999999999999
     if self.bestNode ~= nil then
         bestNodeF = self.bestNode.f
     end
@@ -799,14 +520,14 @@ function AStar:doSearch()
     end
 
     -- try to open new nodes in each available direction
-    for _, direction in pairs(ENavDirection) do
+    for _, direction in pairs(GridMap3D.ENavDirection) do
         local nextGridNode = nil
         -- if not within a leaf node's voxels then try open a normal node
         if currentNode.gridNode[2] == -1 then
-            nextGridNode = nodeAdvancementTable[direction](currentNode.gridNode)
+            nextGridNode = GridMap3D.nodeAdvancementTable[direction](currentNode.gridNode)
         else
             -- within a leaf voxel so need to try get the next leaf voxel index to open
-            nextGridNode = leafNodeAdvancementTable[direction](currentNode.gridNode,direction)
+            nextGridNode = GridMap3D.leafNodeAdvancementTable[direction](currentNode.gridNode,direction)
         end
 
         if nextGridNode[1] ~= nil then
@@ -828,7 +549,7 @@ function AStar:openChildren(node)
     local newChildren = nil
     if node.direction ~= nil then
         -- get all the nodes along the edge on the opposite direction from direction this node was opened from
-        newChildren = gridNodeChildrenWallPerDirection[mirroredDirectionTable[node.direction]](node.gridNode)
+        newChildren = GridMap3D.gridNodeChildrenWallPerDirection[GridMap3D.mirroredDirectionTable[node.direction]](node.gridNode)
 
         if newChildren == nil then
             return
@@ -853,7 +574,7 @@ function AStar:openLeafVoxels(node)
     end
     local newLeafVoxelIndices = {}
     if node.direction ~= nil then
-        newLeafVoxelIndices = gridLeafNodeChildrenWallPerDirection[mirroredDirectionTable[node.direction]]()
+        newLeafVoxelIndices = GridMap3D.gridLeafNodeChildrenWallPerDirection[GridMap3D.mirroredDirectionTable[node.direction]]()
     else
         newLeafVoxelIndices = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,23,24,27,28,29,30,31,32,33,34,35,36,39,40,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63}
     end
@@ -937,7 +658,8 @@ function AStar:postProcessPath(node)
     local firstPosition = g_currentMission.gridMap3D:getNodeLocation(node.gridNode)
 
     if self.bReachedGoal then
-        firstPosition = self.realGoalLocation
+        firstPosition = {x=0,y=0,z=0}
+        firstPosition.x, firstPosition.y, firstPosition.z = self.realGoalLocation.x,self.realGoalLocation.y,self.realGoalLocation.z
     end
     table.insert(path,firstPosition)
 
@@ -963,7 +685,8 @@ function AStar:postProcessPath(node)
             local bIsLast = thirdNode.gridNode == self.startGridNode
             local thirdPosition = g_currentMission.gridMap3D:getNodeLocation(thirdNode.gridNode)
             if bIsLast then
-                thirdPosition = self.realStartLocation
+                thirdPosition = {x=0,y=0,z=0}
+                thirdPosition.x, thirdPosition.y, thirdPosition.z = self.realStartLocation.x, self.realStartLocation.y, self.realStartLocation.z
             end
 
             -- do a raycast to check if middle node can be left out of path
@@ -1109,11 +832,14 @@ function AStar:openNode(parent,gridNode,direction)
         return
     end
 
+    local newNode = self:prepareNewNode(parent,gridNode,direction)
+
     if self:checkgridNodePossibility(gridNode) == false then
+        self:addToClosed(newNode)
         return
     end
 
-    self.open:insert(self:prepareNewNode(parent,gridNode,direction))
+    self.open:insert(newNode)
 end
 
 --- checkGridNodePossiblity is used to check if the given gridNode is a possible next location in the path.
@@ -1125,16 +851,15 @@ function AStar:checkgridNodePossibility(gridNode)
         return false
     end
 
-    local isGoal = false
     -- if it is the goal have to add it into the open if bool allows blocked nodes too if was solid.
-    if self:isSameGridNode(gridNode,self.goalGridNode) then
-        isGoal = true
-    end
+    local isGoal = self:isSameGridNode(gridNode,self.goalGridNode)
+    local isStart = self:isSameGridNode(gridNode,self.startGridNode)
 
     -- if it is a leaf node need to check if the leaf node is not full solid and if it is within a leaf voxel that the leaf voxel is not solid.
     if GridMap3DNode.isLeaf(gridNode[1]) then
-        if GridMap3DNode.isLeafFullSolid(gridNode[1]) or gridNode[2] > -1 and GridMap3DNode.isNodeSolid(gridNode) then
-            if isGoal and self.allowSolidGoal then
+
+        if GridMap3DNode.isLeafFullSolid(gridNode[1]) or (gridNode[2] > -1 and GridMap3DNode.isNodeSolid(gridNode)) then
+            if (isGoal and self.allowSolidGoal) or (isStart and self.allowSolidStart) then
                 return true
             else
                 return false

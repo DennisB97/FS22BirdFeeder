@@ -1,4 +1,4 @@
-# FS22_BirdFeeder v1.0.0.0
+# FS22_BirdFeeder v1.0.0.1
 
 ![Bird feeder and birds](https://i.gyazo.com/b8053efec6204cd6e3b9812a50361585.jpg)
 
@@ -24,6 +24,10 @@ This mod includes the set of scripts that enable fly pathfinding (https://github
 Drop the zipped file into your FS22 mods folder as usual (Documents/My Games/FarmingSimulator2022/mods).
 
 ## Changelog
+
+1.0.0.1 
+- updated fly pathfinding with bug fixes
+- Cleans up temp xml's after use
 
 1.0.0.0 initial release.
 

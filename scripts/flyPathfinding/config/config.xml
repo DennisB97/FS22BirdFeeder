@@ -12,7 +12,7 @@
     <!-- maxOctreeGenerationLoopsPerUpdate how many loops per update to generate the octree, HEAVILY affects performance until the octree is done. But the smaller the value the longer it takes to generate the octree navigation grid. Dedicated server ignores. -->
     <!-- ignoreTrees if the grid should not include trees as solid -->
     <!-- ignoreWater if the grid should not include water as solid -->
-    <octreeConfig maxVoxelResolution="1" maxOctreePreLoops="100000" maxOctreeGenerationLoopsPerUpdate="20" ignoreTrees="true" ignoreWater="true" />
+    <octreeConfig maxVoxelResolution="1" maxOctreePreLoops="80000" maxOctreeGenerationLoopsPerUpdate="20" ignoreTrees="true" ignoreWater="true" />
 
     <!-- maxSearchedNodes limits the amount of nodes can be searched until giving up looking for path, too low value could cause problems in cases such as very long tunnels etc. -->
     <!-- maxPathfindLoops how many loops per update to do the A* pathfinding algorithm, HEAVILY affects performance as long as there is an object that is pathfinding. -->
